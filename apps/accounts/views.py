@@ -8,6 +8,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
+from apps.core.middleware import register_failure, reset_lockout
+
 from .forms import LoginForm, MagicLinkRequestForm, OnboardingForm
 from .models import Invitation, MagicLinkToken, User, WorkspaceSettings
 
@@ -57,13 +59,16 @@ def login_view(request: HttpRequest) -> HttpResponse:
         return redirect(reverse("accounts:onboarding"))
 
     ws = WorkspaceSettings.load()
+    ip = _client_ip(request) or "0.0.0.0"
     if request.method == "POST":
         form = LoginForm(request.POST, request=request)
         if form.is_valid() and form.user is not None:
+            reset_lockout(ip)
             login(request, form.user)
-            form.user.last_login_ip = _client_ip(request)
+            form.user.last_login_ip = ip
             form.user.save(update_fields=["last_login_ip"])
             return redirect("/app/")
+        register_failure(ip)
     else:
         form = LoginForm()
     return render(request, "accounts/login.html", {"form": form, "workspace": ws})

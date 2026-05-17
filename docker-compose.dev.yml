@@ -1,0 +1,15 @@
+# Dev overlay — `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`
+# Mounts the source for live reload and runs the dev server instead of gunicorn.
+services:
+  web:
+    command: ["manage", "runserver", "0.0.0.0:8000"]
+    environment:
+      DJANGO_SETTINGS_MODULE: mailtivo_relay.settings.dev
+      DJANGO_DEBUG: "True"
+    volumes:
+      - .:/app
+  worker:
+    environment:
+      DJANGO_SETTINGS_MODULE: mailtivo_relay.settings.dev
+    volumes:
+      - .:/app

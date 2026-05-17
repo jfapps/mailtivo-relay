@@ -27,6 +27,7 @@ python-ulid>=3.0
 
 # HTTP
 requests>=2.32
+gunicorn>=23.0
 
 # Image handling (allauth + ImageField on WorkspaceSettings.branding_logo)
 Pillow>=11.0

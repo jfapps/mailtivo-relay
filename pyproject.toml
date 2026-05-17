@@ -1,0 +1,51 @@
+[project]
+name = "mailtivo-relay"
+version = "1.0.0"
+description = "Self-hosted, Resend-compatible email relay built on Django 6 + Django-Q2."
+license = { text = "MIT" }
+requires-python = ">=3.13"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = [".venv", "migrations", "staticfiles"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP", "C4", "S"]
+ignore = [
+    "E501",   # line length — handled by formatter where it matters
+    "S101",   # asserts in tests
+    "S105",   # false-positives on words like "secret" in non-secret contexts
+    "S106",
+    "S107",
+    "S311",   # standard random.uniform is fine for weighted routing
+    "S308",   # mark_safe — we don't render untrusted content
+    "B008",   # function call in default arg — common in Django (timezone.now)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"apps/*/tests/*" = ["S", "B018"]
+"apps/*/migrations/*" = ["E", "F", "B", "S"]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+check_untyped_defs = true
+exclude = ["\\.venv", "migrations", "staticfiles"]
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "mailtivo_relay.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "mailtivo_relay.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "-ra -q"
+filterwarnings = ["ignore::DeprecationWarning:django.*"]
+
+[tool.bandit]
+skips = ["B101"]  # assert in tests
+exclude_dirs = ["apps/*/tests", ".venv", "staticfiles"]

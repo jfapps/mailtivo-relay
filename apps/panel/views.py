@@ -15,6 +15,7 @@ from allauth.socialaccount.models import SocialApp
 from django.contrib.sites.models import Site
 
 from apps.accounts.models import Invitation, User, WorkspaceSettings
+from apps.audit.models import AuditLog
 from apps.core.encryption import decrypt, encrypt
 from apps.messages_api.models import Message
 
@@ -129,6 +130,7 @@ def settings_view(request: HttpRequest) -> HttpResponse:
         section = request.POST.get("section", "")
         if section == "workspace" and settings_form.is_valid():
             settings_form.save()
+            AuditLog.record(request.user, action="settings.workspace_saved")
             messages.success(request, "Workspace settings saved.")
             return redirect(reverse("panel:settings"))
         if section == "google" and google_form.is_valid():
@@ -141,6 +143,11 @@ def settings_view(request: HttpRequest) -> HttpResponse:
                 ws.google_oauth_client_secret_encrypted = b""
             ws.save()
             _sync_google_social_app(ws)
+            AuditLog.record(
+                request.user,
+                action="settings.google_oauth_toggled",
+                detail={"enabled": ws.google_oauth_enabled},
+            )
             messages.success(
                 request,
                 "Google sign-in enabled." if ws.google_oauth_enabled else "Google sign-in disabled.",
@@ -181,6 +188,12 @@ def team_view(request: HttpRequest) -> HttpResponse:
             from_email=None,
             recipient_list=[invitation.email],
         )
+        AuditLog.record(
+            request.user,
+            action="team.invited",
+            target=invitation.email,
+            detail={"is_admin": invitation.is_admin},
+        )
         messages.success(request, f"Invitation sent to {invitation.email}.")
         return redirect(reverse("panel:team"))
 
@@ -206,6 +219,7 @@ def invitation_revoke(request: HttpRequest, invitation_id: int) -> HttpResponse:
         return redirect(reverse("panel:team"))
     invitation.revoked_at = timezone.now()
     invitation.save(update_fields=["revoked_at"])
+    AuditLog.record(request.user, action="team.invite_revoked", target=invitation.email)
     messages.success(request, f"Revoked invitation for {invitation.email}.")
     return redirect(reverse("panel:team"))
 
@@ -223,5 +237,6 @@ def member_remove(request: HttpRequest, user_id: int) -> HttpResponse:
         return redirect(reverse("panel:team"))
     user.is_active = False
     user.save(update_fields=["is_active"])
+    AuditLog.record(request.user, action="team.member_removed", target=user.email)
     messages.success(request, f"Removed {user.email}.")
     return redirect(reverse("panel:team"))

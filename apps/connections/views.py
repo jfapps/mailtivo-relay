@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
+from apps.audit.models import AuditLog
 from apps.connections.adapters import PROVIDER_LABELS, AdapterError
 from apps.core.encryption import encrypt
 
@@ -45,6 +46,12 @@ def create_view(request: HttpRequest) -> HttpResponse:
             conn.webhook_public_key_pem = pem
         conn.created_by = request.user
         conn.save()
+        AuditLog.record(
+            request.user,
+            action="connection.created",
+            target=conn.name,
+            detail={"provider": conn.provider_code},
+        )
         messages.success(request, f"Created connection “{conn.name}”.")
         return redirect(reverse("connections:edit", args=[conn.pk]))
     return render(request, "connections/edit.html", {"form": form, "creating": True})
@@ -64,6 +71,7 @@ def edit_view(request: HttpRequest, pk: int) -> HttpResponse:
         if pem := form.cleaned_data.get("webhook_public_key_pem"):
             conn.webhook_public_key_pem = pem
         conn.save()
+        AuditLog.record(request.user, action="connection.updated", target=conn.name)
         messages.success(request, "Connection saved.")
         return redirect(reverse("connections:edit", args=[conn.pk]))
     return render(
@@ -104,5 +112,6 @@ def delete_view(request: HttpRequest, pk: int) -> HttpResponse:
     conn = get_object_or_404(Connection, pk=pk)
     name = conn.name
     conn.delete()
+    AuditLog.record(request.user, action="connection.deleted", target=name)
     messages.success(request, f"Deleted connection “{name}”.")
     return redirect(reverse("connections:list"))

@@ -1,6 +1,8 @@
 """Unified Event model — every webhook from every provider lands here in a
-single normalized shape."""
+single normalized shape. Plus WebhookEndpoint for outbound delivery."""
 from __future__ import annotations
+
+import secrets
 
 from django.db import models
 from django.utils import timezone
@@ -48,3 +50,64 @@ class Event(models.Model):
 
     def __str__(self) -> str:
         return f"Event<{self.type} {self.provider_event_id[:20]}>"
+
+
+def _gen_signing_secret() -> str:
+    return "whsec_" + secrets.token_urlsafe(32)
+
+
+class WebhookEndpoint(models.Model):
+    """An outbound webhook target — the customer's app receives these.
+
+    `event_types` is a list of normalized event types (see NormalizedEvent.EVENT_TYPES).
+    Empty list means "all events".
+    """
+
+    name = models.CharField(max_length=120)
+    url = models.URLField()
+    signing_secret = models.CharField(max_length=64, default=_gen_signing_secret)
+    enabled = models.BooleanField(default=True)
+    event_types = models.JSONField(default=list, blank=True)
+
+    last_attempted_at = models.DateTimeField(null=True, blank=True)
+    last_succeeded_at = models.DateTimeField(null=True, blank=True)
+    consecutive_failures = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+    def wants(self, event_type: str) -> bool:
+        if not self.enabled:
+            return False
+        if not self.event_types:
+            return True
+        return event_type in self.event_types
+
+
+class WebhookDelivery(models.Model):
+    """One delivery attempt for an outbound webhook — used for retry bookkeeping."""
+
+    STATUS_PENDING = "pending"
+    STATUS_DELIVERED = "delivered"
+    STATUS_FAILED = "failed"
+
+    endpoint = models.ForeignKey(WebhookEndpoint, related_name="deliveries", on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, related_name="deliveries", on_delete=models.CASCADE)
+    status = models.CharField(max_length=16, default=STATUS_PENDING)
+    attempts = models.PositiveIntegerField(default=0)
+    last_status_code = models.PositiveIntegerField(null=True, blank=True)
+    last_error = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(fields=["endpoint", "event"], name="uniq_endpoint_event"),
+        ]

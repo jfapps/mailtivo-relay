@@ -32,8 +32,10 @@ DEGRADED_COOLDOWN = timedelta(minutes=5)
 
 def _mark_connection_failure(connection: Connection, *, status_code: int | None) -> None:
     """Bump 5xx counters and apply a cool-down on the connection."""
+    connection.tick_window()
     fields: dict[str, object] = {
         "recent_total": connection.recent_total + 1,
+        "recent_window_start": connection.recent_window_start,
         "status": Connection.STATUS_DEGRADED,
         "last_health_check_at": timezone.now(),
     }
@@ -44,11 +46,14 @@ def _mark_connection_failure(connection: Connection, *, status_code: int | None)
 
 
 def _mark_connection_success(connection: Connection) -> None:
+    connection.tick_window()
     Connection.objects.filter(pk=connection.pk).update(
         recent_total=connection.recent_total + 1,
+        recent_window_start=connection.recent_window_start,
         status=Connection.STATUS_HEALTHY,
         last_health_check_at=timezone.now(),
         last_health_message="OK",
+        skip_until=None,
     )
 
 

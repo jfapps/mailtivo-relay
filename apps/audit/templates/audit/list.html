@@ -1,0 +1,49 @@
+{% extends "panel/base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Audit log</span>{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <header>
+    <h1 class="text-2xl font-semibold text-slate-900">Audit log</h1>
+    <p class="mt-1 text-sm text-slate-500">Every admin action — key issuance, connection edits, pool weight changes, suppression edits, settings, and webhook ops.</p>
+  </header>
+
+  <form class="flex items-end gap-2" method="get">
+    <div class="grow">
+      <label class="label" for="id_action">Action filter</label>
+      <input class="input" type="text" name="action" id="id_action" value="{{ action }}" placeholder="e.g. apikey, connection, pool, suppression">
+    </div>
+    <button class="btn-secondary">Apply</button>
+  </form>
+
+  <section class="card">
+    {% if page.object_list %}
+      <table class="data-table">
+        <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead>
+        <tbody>
+          {% for a in page.object_list %}
+            <tr>
+              <td class="text-xs text-slate-500">{{ a.created_at|date:"M j, H:i:s" }}</td>
+              <td class="text-xs text-slate-700">{{ a.actor_email|default:"system" }}</td>
+              <td><span class="badge-slate">{{ a.action }}</span></td>
+              <td class="text-xs text-slate-700">{{ a.target|default:"—" }}</td>
+              <td class="text-xs text-slate-500"><code class="code">{{ a.detail|default:"" }}</code></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if page.paginator.num_pages > 1 %}
+        <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
+          <span>Page {{ page.number }} / {{ page.paginator.num_pages }}</span>
+          <div class="flex gap-2">
+            {% if page.has_previous %}<a class="btn-ghost text-xs" href="?{% if action %}action={{ action }}&{% endif %}page={{ page.previous_page_number }}">← Prev</a>{% endif %}
+            {% if page.has_next %}<a class="btn-ghost text-xs" href="?{% if action %}action={{ action }}&{% endif %}page={{ page.next_page_number }}">Next →</a>{% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="card-body py-12 text-center text-sm text-slate-500">No audit entries yet.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

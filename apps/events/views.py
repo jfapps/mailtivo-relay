@@ -21,9 +21,17 @@ from django.views.decorators.http import require_http_methods
 from apps.connections.adapters import AdapterError
 from apps.connections.models import Connection
 from apps.events.models import Event
+from apps.events.outbound import fan_out
 from apps.messages_api.models import Message
+from apps.suppressions.models import Suppression
 
 log = logging.getLogger(__name__)
+
+
+_AUTO_SUPPRESS_REASON = {
+    "bounced": Suppression.REASON_HARD_BOUNCE,
+    "complained": Suppression.REASON_COMPLAINT,
+}
 
 
 # Map normalized event types → Message.status. None means "do not update".
@@ -136,6 +144,18 @@ def _ingest(request: HttpRequest, connection: Connection) -> JsonResponse:
         if message is not None:
             _apply_status(message, _STATUS_FOR_EVENT.get(normalized.type))
 
+        # Auto-suppress on hard bounce / complaint, using the event recipient.
+        reason = _AUTO_SUPPRESS_REASON.get(normalized.type)
+        if reason and normalized.recipient:
+            Suppression.add(
+                normalized.recipient,
+                reason=reason,
+                note=f"auto from {connection.provider_code} {normalized.type}",
+                source_message=message,
+            )
+
+        fan_out(event, message=message)
+
     return JsonResponse(
         {"ok": True, "event_id": event.id, "type": normalized.type, "matched_message": bool(message)},
         status=200,
@@ -154,3 +174,81 @@ def postal_webhook(request: HttpRequest, connection_id: int) -> JsonResponse:
 def resend_webhook(request: HttpRequest, connection_id: int) -> JsonResponse:
     connection = get_object_or_404(Connection, pk=connection_id, provider_code=Connection.PROVIDER_RESEND)
     return _ingest(request, connection)
+
+
+# ---- panel views for outbound webhook configuration ----------------------
+
+from django.contrib import messages as flash  # noqa: E402
+from django.contrib.auth.decorators import login_required, user_passes_test  # noqa: E402
+from django.http import HttpResponse  # noqa: E402
+from django.shortcuts import redirect, render  # noqa: E402
+from django.urls import reverse  # noqa: E402
+
+from apps.audit.models import AuditLog  # noqa: E402
+from apps.events.forms import WebhookEndpointForm  # noqa: E402
+from apps.events.models import WebhookEndpoint  # noqa: E402
+
+
+def _admin_required(view):
+    return login_required(login_url="/login/")(
+        user_passes_test(lambda u: u.is_authenticated and u.is_workspace_admin, login_url="/login/")(view)
+    )
+
+
+@_admin_required
+def webhooks_list(request: HttpRequest) -> HttpResponse:
+    endpoints = WebhookEndpoint.objects.all()
+    return render(request, "events/webhooks_list.html", {"endpoints": endpoints})
+
+
+@_admin_required
+@require_http_methods(["GET", "POST"])
+def webhooks_create(request: HttpRequest) -> HttpResponse:
+    form = WebhookEndpointForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        endpoint = form.save()
+        AuditLog.record(request.user, action="webhook.created", target=endpoint.url)
+        flash.success(request, f"Webhook “{endpoint.name}” created. Copy the signing secret below.")
+        return redirect(reverse("events:webhooks_edit", args=[endpoint.pk]))
+    return render(request, "events/webhooks_edit.html", {"form": form, "creating": True})
+
+
+@_admin_required
+@require_http_methods(["GET", "POST"])
+def webhooks_edit(request: HttpRequest, pk: int) -> HttpResponse:
+    endpoint = get_object_or_404(WebhookEndpoint, pk=pk)
+    form = WebhookEndpointForm(request.POST or None, instance=endpoint)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        AuditLog.record(request.user, action="webhook.updated", target=endpoint.url)
+        flash.success(request, "Webhook saved.")
+        return redirect(reverse("events:webhooks_edit", args=[endpoint.pk]))
+    return render(
+        request,
+        "events/webhooks_edit.html",
+        {"form": form, "endpoint": endpoint, "creating": False},
+    )
+
+
+@_admin_required
+@require_http_methods(["POST"])
+def webhooks_rotate(request: HttpRequest, pk: int) -> HttpResponse:
+    from apps.events.models import _gen_signing_secret
+
+    endpoint = get_object_or_404(WebhookEndpoint, pk=pk)
+    endpoint.signing_secret = _gen_signing_secret()
+    endpoint.save(update_fields=["signing_secret", "updated_at"])
+    AuditLog.record(request.user, action="webhook.secret_rotated", target=endpoint.url)
+    flash.success(request, "Signing secret rotated.")
+    return redirect(reverse("events:webhooks_edit", args=[endpoint.pk]))
+
+
+@_admin_required
+@require_http_methods(["POST"])
+def webhooks_delete(request: HttpRequest, pk: int) -> HttpResponse:
+    endpoint = get_object_or_404(WebhookEndpoint, pk=pk)
+    url = endpoint.url
+    endpoint.delete()
+    AuditLog.record(request.user, action="webhook.deleted", target=url)
+    flash.success(request, "Webhook deleted.")
+    return redirect(reverse("events:webhooks_list"))

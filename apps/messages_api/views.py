@@ -12,12 +12,14 @@ from django.views.decorators.http import require_http_methods
 from apps.accounts.models import WorkspaceSettings
 from apps.messages_api.auth import require_api_key
 from apps.messages_api.models import Attachment, IdempotencyRecord, Message
+from apps.messages_api.ratelimit import check as ratelimit_check
 from apps.messages_api.serializers import (
     ValidationError,
     fingerprint_request,
     parse_email_request,
     serialize_message,
 )
+from apps.suppressions.models import Suppression
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +44,18 @@ def _parse_body(request: HttpRequest) -> dict:
 def emails_create(request: HttpRequest) -> JsonResponse:
     api_key = request.api_auth.api_key  # type: ignore[attr-defined]
 
+    rate = ratelimit_check(api_key.id)
+    if not rate.allowed:
+        response = _error(
+            f"Rate limit exceeded — retry after {rate.retry_after}s.",
+            status=429,
+            name="rate_limit_exceeded",
+        )
+        response["Retry-After"] = str(rate.retry_after)
+        response["RateLimit-Limit"] = str(rate.limit)
+        response["RateLimit-Remaining"] = "0"
+        return response
+
     try:
         body = _parse_body(request)
         clean = parse_email_request(body)
@@ -55,6 +69,23 @@ def emails_create(request: HttpRequest) -> JsonResponse:
             status=400,
             name="no_pool_assigned",
         )
+
+    # Filter suppressed recipients. If *all* recipients are suppressed,
+    # refuse the send up front rather than queueing a no-op.
+    suppressed = Suppression.filter_suppressed(
+        list(clean["to"]) + list(clean["cc"]) + list(clean["bcc"])
+    )
+    if suppressed:
+        kept_to = [a for a in clean["to"] if a.strip().lower() not in suppressed]
+        if not kept_to:
+            return _error(
+                f"All recipients are suppressed: {', '.join(sorted(suppressed))}",
+                status=422,
+                name="recipient_suppressed",
+            )
+        clean["to"] = kept_to
+        clean["cc"] = [a for a in clean["cc"] if a.strip().lower() not in suppressed]
+        clean["bcc"] = [a for a in clean["bcc"] if a.strip().lower() not in suppressed]
 
     idem_key = request.META.get("HTTP_IDEMPOTENCY_KEY", "").strip()
     fingerprint = fingerprint_request(body) if idem_key else ""

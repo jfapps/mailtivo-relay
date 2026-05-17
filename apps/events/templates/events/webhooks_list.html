@@ -1,0 +1,42 @@
+{% extends "panel/base.html" %}
+{% block title %}Webhook endpoints{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Webhooks</span>{% endblock %}
+{% block topbar_actions %}<a href="{% url 'webhooks_panel:create' %}" class="btn-primary">New webhook</a>{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <header>
+    <h1 class="text-2xl font-semibold text-slate-900">Outbound webhooks</h1>
+    <p class="mt-1 text-sm text-slate-500">Mailtivo-Relay forwards normalized events to these URLs. Each delivery is HMAC-SHA256 signed and retried with exponential backoff.</p>
+  </header>
+
+  {% if endpoints %}
+    <section class="card">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Last delivered</th><th>Failures</th><th class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for e in endpoints %}
+            <tr>
+              <td>
+                <a href="{% url 'webhooks_panel:edit' e.id %}" class="font-medium text-slate-900 hover:underline">{{ e.name }}</a>
+                {% if not e.enabled %}<span class="badge-slate ml-2">Disabled</span>{% endif %}
+              </td>
+              <td class="text-xs text-slate-500">{{ e.url|truncatechars:50 }}</td>
+              <td class="text-xs text-slate-500">{% if e.event_types %}{{ e.event_types|join:", " }}{% else %}all{% endif %}</td>
+              <td class="text-xs text-slate-500">{{ e.last_succeeded_at|default:"never"|date:"M j, H:i" }}</td>
+              <td class="text-xs {% if e.consecutive_failures %}text-red-600{% else %}text-slate-500{% endif %}">{{ e.consecutive_failures }}</td>
+              <td class="text-right"><a href="{% url 'webhooks_panel:edit' e.id %}" class="btn-ghost text-xs">Edit</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% else %}
+    <section class="card">
+      <div class="card-body py-12 text-center">
+        <p class="text-sm text-slate-500">No webhook endpoints configured. Add one to receive event notifications.</p>
+        <a href="{% url 'webhooks_panel:create' %}" class="btn-primary mt-3">New webhook</a>
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

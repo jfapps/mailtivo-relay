@@ -8,6 +8,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
+from apps.audit.models import AuditLog
+
 from .forms import IssueKeyForm
 from .models import APIKey
 
@@ -31,6 +33,12 @@ def list_view(request: HttpRequest) -> HttpResponse:
             created_by=request.user,
             default_pool=form.cleaned_data.get("default_pool"),
         )
+        AuditLog.record(
+            request.user,
+            action="apikey.issued",
+            target=issued_key.name,
+            detail={"scopes": issued_key.scopes, "default_pool": getattr(issued_key.default_pool, "name", None)},
+        )
         # Don't redirect — we need to render the page once to surface the secret.
         form = IssueKeyForm()
 
@@ -53,5 +61,6 @@ def revoke_view(request: HttpRequest, pk: int) -> HttpResponse:
     key = get_object_or_404(APIKey, pk=pk, revoked_at__isnull=True)
     key.revoked_at = timezone.now()
     key.save(update_fields=["revoked_at"])
+    AuditLog.record(request.user, action="apikey.revoked", target=key.name)
     messages.success(request, f"Revoked “{key.name}”.")
     return redirect(reverse("api_keys:list"))

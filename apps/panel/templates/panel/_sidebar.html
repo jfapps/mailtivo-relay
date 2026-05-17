@@ -35,9 +35,15 @@
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 12l-3 3 3 3m6-6l3-3-3-3M14 4L10 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       API Keys
     </a>
-    <a href="#" class="sidebar-link opacity-60 cursor-not-allowed">
+    {% url 'suppressions:list' as suppressions_url %}
+    <a href="{{ suppressions_url }}" class="sidebar-link" {% if '/app/suppressions/' in request.path %}aria-current="page"{% endif %}>
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M5 19h14a2 2 0 001.74-3L13.74 4a2 2 0 00-3.48 0L3.26 16A2 2 0 005 19z" stroke="currentColor" stroke-width="1.8"/></svg>
-      Suppressions <span class="ml-auto text-[10px] uppercase tracking-wide text-slate-500">Day 6</span>
+      Suppressions
+    </a>
+    {% url 'webhooks_panel:list' as webhooks_url %}
+    <a href="{{ webhooks_url }}" class="sidebar-link" {% if '/app/webhooks/' in request.path %}aria-current="page"{% endif %}>
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M14 7l-5 10M9 7h6v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Outbound webhooks
     </a>
 
     <div class="mt-4 px-3 text-[11px] uppercase tracking-wide text-slate-500">Workspace</div>
@@ -50,6 +56,11 @@
     <a href="{{ team_url }}" class="sidebar-link" {% if request.resolver_match.url_name == 'team' %}aria-current="page"{% endif %}>
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M21 21v-2a4 4 0 00-3-3.87M9 11a4 4 0 100-8 4 4 0 000 8zm7-1a4 4 0 11-1.5-7.74" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Team
+    </a>
+    {% url 'audit:list' as audit_url %}
+    <a href="{{ audit_url }}" class="sidebar-link" {% if '/app/audit/' in request.path %}aria-current="page"{% endif %}>
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3 8-8M5 12a7 7 0 1014 0 7 7 0 00-14 0z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Audit log
     </a>
   </nav>
   <div class="border-t border-slate-800 p-4">

@@ -46,9 +46,12 @@ class Connection(models.Model):
     last_health_message = models.CharField(max_length=255, blank=True)
 
     # Rolling-window counters that the router consults for health-aware skip.
+    # The window resets every WINDOW_SECONDS via tick_window().
     recent_5xx_count = models.PositiveIntegerField(default=0)
     recent_total = models.PositiveIntegerField(default=0)
+    recent_window_start = models.DateTimeField(null=True, blank=True)
     skip_until = models.DateTimeField(null=True, blank=True)
+    WINDOW_SECONDS = 60
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -75,3 +78,20 @@ class Connection(models.Model):
         from .adapters import get_adapter_class
 
         return get_adapter_class(self.provider_code)(self)
+
+    def tick_window(self) -> None:
+        """Reset rolling counters if the current window has expired. Mutates
+        the in-memory instance; callers persist via Connection.objects.update."""
+        from datetime import timedelta
+
+        now = timezone.now()
+        start = self.recent_window_start
+        if start is None or (now - start) >= timedelta(seconds=self.WINDOW_SECONDS):
+            self.recent_5xx_count = 0
+            self.recent_total = 0
+            self.recent_window_start = now
+
+    def error_rate_pct(self) -> float:
+        if not self.recent_total:
+            return 0.0
+        return (self.recent_5xx_count / self.recent_total) * 100.0

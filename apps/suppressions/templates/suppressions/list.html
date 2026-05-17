@@ -1,0 +1,116 @@
+{% extends "panel/base.html" %}
+{% block title %}Suppressions{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Suppressions</span>{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'suppressions:export' %}" class="btn-secondary text-xs">Export CSV</a>
+{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <header>
+    <h1 class="text-2xl font-semibold text-slate-900">Suppression list</h1>
+    <p class="mt-1 text-sm text-slate-500">Recipients listed here are blocked at the API layer — they're filtered before queuing. Hard bounces and complaints are added automatically.</p>
+  </header>
+
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <section class="card">
+      <div class="card-header">
+        <h2 class="text-sm font-semibold text-slate-900">Add manually</h2>
+      </div>
+      <form method="post" class="card-body grid grid-cols-1 gap-3" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="section" value="add">
+        <div>
+          <label class="label" for="id_email">Email</label>
+          <input class="input" type="email" name="email" id="id_email" value="{{ add_form.email.value|default_if_none:'' }}" required>
+          {% if add_form.email.errors %}<div class="field-error">{{ add_form.email.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="label" for="id_reason">Reason</label>
+          <select class="input" name="reason" id="id_reason">
+            {% for value, label in add_form.reason.field.choices %}
+              <option value="{{ value }}" {% if add_form.reason.value == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="label" for="id_note">Note (optional)</label>
+          <input class="input" type="text" name="note" id="id_note" value="{{ add_form.note.value|default_if_none:'' }}">
+        </div>
+        <button type="submit" class="btn-primary self-start">Add</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2 class="text-sm font-semibold text-slate-900">Import CSV</h2>
+      </div>
+      <form method="post" enctype="multipart/form-data" class="card-body grid grid-cols-1 gap-3">
+        {% csrf_token %}
+        <input type="hidden" name="section" value="import">
+        <div>
+          <label class="label" for="id_csv_file">CSV file</label>
+          <input class="input" type="file" name="csv_file" id="id_csv_file" accept=".csv,text/csv" required>
+          <p class="mt-1 text-xs text-slate-500">One email per line, or a CSV with an <span class="code">email</span> column.</p>
+          {% if import_form.csv_file.errors %}<div class="field-error">{{ import_form.csv_file.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="label" for="id_import_reason">Reason</label>
+          <select class="input" name="reason" id="id_import_reason">
+            {% for value, label in import_form.reason.field.choices %}
+              <option value="{{ value }}" {% if import_form.reason.value == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn-secondary self-start">Import</button>
+      </form>
+    </section>
+  </div>
+
+  <form class="flex items-end gap-2" method="get">
+    <div class="grow">
+      <label class="label" for="id_q">Search</label>
+      <input class="input" type="search" name="q" id="id_q" value="{{ q }}" placeholder="email or note">
+    </div>
+    <button class="btn-secondary">Search</button>
+  </form>
+
+  <section class="card">
+    <div class="card-header">
+      <h2 class="text-sm font-semibold text-slate-900">All suppressions</h2>
+      <span class="text-xs text-slate-500">{{ page.paginator.count }} total</span>
+    </div>
+    {% if page.object_list %}
+      <table class="data-table">
+        <thead><tr><th>Email</th><th>Reason</th><th>Note</th><th>Added</th><th class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for s in page.object_list %}
+            <tr>
+              <td class="font-medium text-slate-900">{{ s.email }}</td>
+              <td><span class="badge-slate">{{ s.get_reason_display|default:s.reason }}</span></td>
+              <td class="text-xs text-slate-500">{{ s.note|default:"—" }}</td>
+              <td class="text-xs text-slate-500">{{ s.created_at|date:"M j, Y · H:i" }}</td>
+              <td class="text-right">
+                <form method="post" action="{% url 'suppressions:remove' s.id %}" class="inline" onsubmit="return confirm('Remove {{ s.email }} from the suppression list?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-ghost text-xs text-red-600 hover:bg-red-50">Remove</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if page.paginator.num_pages > 1 %}
+        <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
+          <span>Page {{ page.number }} / {{ page.paginator.num_pages }}</span>
+          <div class="flex gap-2">
+            {% if page.has_previous %}<a class="btn-ghost text-xs" href="?{% if q %}q={{ q }}&{% endif %}page={{ page.previous_page_number }}">← Prev</a>{% endif %}
+            {% if page.has_next %}<a class="btn-ghost text-xs" href="?{% if q %}q={{ q }}&{% endif %}page={{ page.next_page_number }}">Next →</a>{% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="card-body py-12 text-center text-sm text-slate-500">No suppressions yet.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

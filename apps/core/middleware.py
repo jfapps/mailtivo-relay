@@ -16,7 +16,10 @@ from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 
 _DEFAULT_CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' https://unpkg.com; "
+    # Alpine.js evaluates x-show/x-model/etc. expressions via new Function() —
+    # that requires 'unsafe-eval'. The alternative is the @alpinejs/csp build
+    # which compiles expressions ahead of time, but it's not a drop-in.
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; "
     "style-src 'self' 'unsafe-inline' https://rsms.me; "
     "font-src 'self' https://rsms.me; "
     "img-src 'self' data: https:; "

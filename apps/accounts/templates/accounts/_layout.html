@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}Mailtivo-Relay{% endblock %}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}" />
+  <link rel="preconnect" href="https://rsms.me/">
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+<body class="h-full">
+  <div class="grid min-h-screen place-items-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <div class="mb-8 flex items-center justify-center gap-2 text-base font-semibold text-slate-900">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="M3 7l9 6 9-6M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l2-2h14l2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        Mailtivo<span class="text-brand-600">·</span>Relay
+      </div>
+      <div class="card">
+        <div class="card-body space-y-5">
+          {% if messages %}
+            {% for m in messages %}
+              <div class="{% if 'error' in m.tags %}alert-error{% else %}alert-success{% endif %}">{{ m }}</div>
+            {% endfor %}
+          {% endif %}
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+      {% block below_card %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>

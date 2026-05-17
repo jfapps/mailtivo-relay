@@ -1,0 +1,42 @@
+{% load status_badges %}
+<section class="card">
+  {% if page.object_list %}
+    <table class="data-table">
+      <thead><tr><th>Status</th><th>Subject</th><th>From → To</th><th>Created</th><th>Connection</th></tr></thead>
+      <tbody>
+        {% for m in page.object_list %}
+          <tr class="cursor-pointer hover:bg-slate-50" onclick="window.location='{% url 'messages_panel:detail' m.id %}'">
+            <td>{% status_badge m.status %}</td>
+            <td>
+              <a href="{% url 'messages_panel:detail' m.id %}" class="font-medium text-slate-900 hover:underline">{{ m.subject|default:"(no subject)" }}</a>
+              <div class="text-xs text-slate-400 font-mono">{{ m.id }}</div>
+            </td>
+            <td class="text-xs text-slate-500">
+              <div class="truncate">{{ m.from_address }}</div>
+              <div class="truncate text-slate-400">→ {{ m.to|join:", " }}</div>
+            </td>
+            <td class="text-xs text-slate-500">{{ m.created_at|date:"M j, H:i" }}</td>
+            <td class="text-xs text-slate-500">{{ m.connection.name|default:"—" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if page.paginator.num_pages > 1 %}
+      <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
+        <span>Page {{ page.number }} of {{ page.paginator.num_pages }} · {{ page.paginator.count }} total</span>
+        <div class="flex gap-2">
+          {% if page.has_previous %}
+            <a class="btn-ghost text-xs" href="?{% if q %}q={{ q }}&{% endif %}{% if active_status %}status={{ active_status }}&{% endif %}page={{ page.previous_page_number }}">← Prev</a>
+          {% endif %}
+          {% if page.has_next %}
+            <a class="btn-ghost text-xs" href="?{% if q %}q={{ q }}&{% endif %}{% if active_status %}status={{ active_status }}&{% endif %}page={{ page.next_page_number }}">Next →</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="card-body py-12 text-center text-sm text-slate-500">
+      {% if q or active_status %}No messages match those filters.{% else %}No messages yet. Send one through <span class="code">/api/v1/emails</span> to see it here.{% endif %}
+    </div>
+  {% endif %}
+</section>

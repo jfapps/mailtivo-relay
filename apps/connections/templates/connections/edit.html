@@ -1,0 +1,127 @@
+{% extends "panel/base.html" %}
+{% block title %}{% if creating %}New connection{% else %}{{ connection.name }}{% endif %}{% endblock %}
+{% block topbar_breadcrumb %}
+  <span class="text-slate-300">/</span><a href="{% url 'connections:list' %}" class="text-sm font-medium text-slate-700 hover:underline">Connections</a>
+  <span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-900">{% if creating %}New{% else %}{{ connection.name }}{% endif %}</span>
+{% endblock %}
+{% block content %}
+<div class="space-y-6" x-data="{ provider: '{{ form.provider_code.value|default:'resend' }}' }">
+  <header class="flex items-end justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">{% if creating %}Add a connection{% else %}{{ connection.name }}{% endif %}</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        {% if creating %}Connect a Postal server or a Resend account.{% else %}Edit credentials, base URL, or webhook material.{% endif %}
+      </p>
+    </div>
+    {% if not creating %}
+      <form method="post" action="{% url 'connections:delete' connection.id %}" onsubmit="return confirm('Delete this connection? Pool members referencing it will need to be reconfigured.');">
+        {% csrf_token %}
+        <button type="submit" class="btn-ghost text-xs text-red-600 hover:bg-red-50">Delete</button>
+      </form>
+    {% endif %}
+  </header>
+
+  <section class="card">
+    <form method="post" class="card-body space-y-5" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert-error">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label class="label" for="id_name">Name</label>
+          <input class="input" name="name" id="id_name" value="{{ form.name.value|default_if_none:'' }}" required>
+          {% if form.name.errors %}<div class="field-error">{{ form.name.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="label" for="id_provider_code">Provider</label>
+          <select class="input" name="provider_code" id="id_provider_code" x-model="provider" {% if not creating %}disabled{% endif %}>
+            <option value="resend" {% if form.provider_code.value == 'resend' %}selected{% endif %}>Resend</option>
+            <option value="postal" {% if form.provider_code.value == 'postal' %}selected{% endif %}>Postal</option>
+          </select>
+          {% if not creating %}<input type="hidden" name="provider_code" value="{{ form.provider_code.value }}">{% endif %}
+        </div>
+      </div>
+
+      <div>
+        <label class="label" for="id_base_url">
+          Base URL
+          <span class="text-slate-400" x-show="provider === 'resend'">(optional, defaults to https://api.resend.com)</span>
+          <span class="text-slate-400" x-show="provider === 'postal'">(required)</span>
+        </label>
+        <input class="input" name="base_url" id="id_base_url" value="{{ form.base_url.value|default_if_none:'' }}"
+               x-bind:placeholder="provider === 'postal' ? 'https://postal.example.com' : 'https://api.resend.com'">
+        {% if form.base_url.errors %}<div class="field-error">{{ form.base_url.errors|join:" " }}</div>{% endif %}
+      </div>
+
+      <div>
+        <label class="label" for="id_api_key">
+          <span x-show="provider === 'resend'">Resend API key</span>
+          <span x-show="provider === 'postal'" x-cloak>Postal server API key</span>
+          {% if not creating %}<span class="text-slate-400">(leave blank to keep current)</span>{% endif %}
+        </label>
+        <input class="input font-mono text-xs" type="password" name="api_key" id="id_api_key" autocomplete="off"
+               x-bind:placeholder="provider === 'resend' ? 're_xxxxxxxxxxxxxxxxxxxx' : 'Postal server credential'">
+        {% if form.api_key.errors %}<div class="field-error">{{ form.api_key.errors|join:" " }}</div>{% endif %}
+      </div>
+
+      <!-- Resend webhook secret -->
+      <div x-show="provider === 'resend'">
+        <label class="label" for="id_webhook_secret">Webhook signing secret <span class="text-slate-400">(whsec_..., for inbound event verification)</span></label>
+        <input class="input font-mono text-xs" type="password" name="webhook_secret" id="id_webhook_secret" autocomplete="off" placeholder="whsec_...">
+        <p class="mt-1 text-xs text-slate-500">Find this on your Resend dashboard under Webhooks → your endpoint. Leave blank to keep the existing value.</p>
+      </div>
+
+      <!-- Postal webhook public key -->
+      <div x-show="provider === 'postal'" x-cloak>
+        <label class="label" for="id_webhook_public_key_pem">Webhook signing public key (PEM)</label>
+        <textarea class="input font-mono text-xs" name="webhook_public_key_pem" id="id_webhook_public_key_pem" rows="6" placeholder="-----BEGIN PUBLIC KEY-----&#10;...&#10;-----END PUBLIC KEY-----">{{ form.webhook_public_key_pem.value|default_if_none:'' }}</textarea>
+        <p class="mt-1 text-xs text-slate-500">Paste the public half of your Postal instance's <span class="code">config/signing.key</span>. Used to verify webhook signatures.</p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label class="label" for="id_daily_cap">Daily cap <span class="text-slate-400">(0 = unlimited)</span></label>
+          <input class="input" type="number" min="0" name="daily_cap" id="id_daily_cap" value="{{ form.daily_cap.value|default:0 }}">
+        </div>
+        <label class="mt-6 inline-flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" name="enabled" class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" {% if form.enabled.value %}checked{% endif %}>
+          Enabled
+        </label>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+        {% if not creating %}
+          <form method="post" action="{% url 'connections:test' connection.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-secondary">Test connection</button>
+          </form>
+        {% else %}
+          <span></span>
+        {% endif %}
+        <div class="flex gap-2">
+          <a href="{% url 'connections:list' %}" class="btn-ghost">Cancel</a>
+          <button type="submit" class="btn-primary">{% if creating %}Create{% else %}Save{% endif %}</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  {% if not creating %}
+    <section class="card">
+      <div class="card-header"><h2 class="text-sm font-semibold text-slate-900">Health</h2></div>
+      <div class="card-body space-y-2 text-sm">
+        <div>Status:
+          {% if connection.status == 'healthy' %}<span class="badge-green">Healthy</span>
+          {% elif connection.status == 'degraded' %}<span class="badge-yellow">Degraded</span>
+          {% elif connection.status == 'down' %}<span class="badge-red">Down</span>
+          {% else %}<span class="badge-slate">Untested</span>{% endif %}
+        </div>
+        <div class="text-xs text-slate-500">Last checked: {{ connection.last_health_check_at|default:"never"|date:"M j, Y H:i" }}</div>
+        {% if connection.last_health_message %}
+          <pre class="overflow-x-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-700">{{ connection.last_health_message }}</pre>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

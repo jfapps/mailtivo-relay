@@ -1,0 +1,47 @@
+{% extends "panel/base.html" %}
+{% block title %}Pools{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Pools</span>{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'pools:create' %}" class="btn-primary">New pool</a>
+{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <header>
+    <h1 class="text-2xl font-semibold text-slate-900">Sending pools</h1>
+    <p class="mt-1 text-sm text-slate-500">A pool groups one or more provider connections behind a routing strategy. Assign a pool to an API key to start sending.</p>
+  </header>
+
+  {% if pools %}
+    <section class="card">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Strategy</th><th>Members</th><th>Health-skip</th><th class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for p in pools %}
+            <tr>
+              <td><a href="{% url 'pools:edit' p.id %}" class="font-medium text-slate-900 hover:underline">{{ p.name }}</a></td>
+              <td><span class="badge-slate">{{ p.get_routing_strategy_display }}</span></td>
+              <td class="text-xs text-slate-500">
+                {% for m in p.members.all %}
+                  <span class="badge-slate">{{ m.connection.name }}<span class="ml-1 text-slate-400">w{{ m.weight }}</span></span>
+                {% empty %}<span class="text-slate-400">— empty —</span>{% endfor %}
+              </td>
+              <td>{% if p.health_skip_enabled %}<span class="badge-green">On</span>{% else %}<span class="badge-slate">Off</span>{% endif %}</td>
+              <td class="text-right">
+                <a href="{% url 'pools:edit' p.id %}" class="btn-ghost text-xs">Edit</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% else %}
+    <section class="card">
+      <div class="card-body flex flex-col items-center gap-3 py-12 text-center">
+        <div class="text-sm font-medium text-slate-900">No pools yet</div>
+        <p class="max-w-md text-sm text-slate-500">Create your first pool to start routing sends through one or more provider connections.</p>
+        <a href="{% url 'pools:create' %}" class="btn-primary">Create pool</a>
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

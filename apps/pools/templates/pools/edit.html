@@ -1,0 +1,152 @@
+{% extends "panel/base.html" %}
+{% block title %}{% if creating %}New pool{% else %}{{ pool.name }}{% endif %}{% endblock %}
+{% block topbar_breadcrumb %}
+  <span class="text-slate-300">/</span><a class="text-sm text-slate-500 hover:text-slate-700" href="{% url 'pools:list' %}">Pools</a>
+  <span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">{% if creating %}New{% else %}{{ pool.name }}{% endif %}</span>
+{% endblock %}
+{% block content %}
+<div class="space-y-6" x-data="{ tab: 'overview' }">
+  <header class="flex items-end justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">{% if creating %}New pool{% else %}{{ pool.name }}{% endif %}</h1>
+      <p class="mt-1 text-sm text-slate-500">Pick a routing strategy, attach connections, optionally configure a warm-up curve.</p>
+    </div>
+    {% if not creating %}
+      <form method="post" action="{% url 'pools:delete' pool.id %}" onsubmit="return confirm('Delete this pool? API keys pointing at it will lose their default pool.');">
+        {% csrf_token %}
+        <button type="submit" class="btn-ghost text-xs text-red-600 hover:bg-red-50">Delete pool</button>
+      </form>
+    {% endif %}
+  </header>
+
+  {% if not creating %}
+    <nav class="flex gap-2 border-b border-slate-200">
+      <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='overview' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='overview'">Overview</button>
+      <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='members' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='members'">Members</button>
+      <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='warmup' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='warmup'">Warm-up</button>
+    </nav>
+  {% endif %}
+
+  <section x-show="tab==='overview' || {{ creating|yesno:'true,false' }}" {% if not creating %}x-cloak{% endif %}>
+    <form method="post" class="card">
+      {% csrf_token %}
+      <div class="card-body grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div class="md:col-span-2">
+          <label class="label" for="id_name">Name</label>
+          <input class="input" id="id_name" name="name" value="{{ form.name.value|default_if_none:'' }}" required>
+          {% if form.name.errors %}<div class="field-error">{{ form.name.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div>
+          <label class="label" for="id_routing_strategy">Routing strategy</label>
+          <select class="input" id="id_routing_strategy" name="routing_strategy">
+            {% for value, label in form.routing_strategy.field.choices %}
+              <option value="{{ value }}" {% if form.routing_strategy.value == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex items-end gap-2">
+          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="health_skip_enabled" {% if form.health_skip_enabled.value %}checked{% endif %}>
+            Skip degraded providers automatically
+          </label>
+        </div>
+        <div>
+          <label class="label" for="id_recent_5xx_threshold">5xx threshold</label>
+          <input type="number" min="1" class="input" id="id_recent_5xx_threshold" name="recent_5xx_threshold" value="{{ form.recent_5xx_threshold.value|default:5 }}">
+        </div>
+        <div>
+          <label class="label" for="id_recent_bounce_rate_threshold_pct">Bounce-rate threshold (%)</label>
+          <input type="number" min="1" max="100" class="input" id="id_recent_bounce_rate_threshold_pct" name="recent_bounce_rate_threshold_pct" value="{{ form.recent_bounce_rate_threshold_pct.value|default:10 }}">
+        </div>
+      </div>
+      <div class="card-header bg-slate-50 justify-end gap-2">
+        <a href="{% url 'pools:list' %}" class="btn-ghost text-xs">Cancel</a>
+        <button type="submit" class="btn-primary text-xs">{% if creating %}Create pool{% else %}Save{% endif %}</button>
+      </div>
+    </form>
+  </section>
+
+  {% if not creating %}
+    <section x-show="tab==='members'" x-cloak class="space-y-4">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="text-sm font-semibold text-slate-900">Members</h2>
+          <span class="text-xs text-slate-500">{{ members|length }} attached</span>
+        </div>
+        {% if members %}
+          <table class="data-table">
+            <thead><tr><th>Connection</th><th>Provider</th><th class="w-1/3">Weight</th><th>Priority</th><th>Enabled</th><th class="text-right">Actions</th></tr></thead>
+            <tbody id="pool-members-tbody">
+              {% for m in members %}
+                {% include "pools/_member_row.html" with m=m pool=pool %}
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="card-body py-8 text-center text-sm text-slate-500">No members yet — add one below.</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="text-sm font-semibold text-slate-900">Add member</h2>
+        </div>
+        <form method="post" action="{% url 'pools:member_add' pool.id %}" class="card-body grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr_1fr_auto] md:items-end">
+          {% csrf_token %}
+          <div>
+            <label class="label" for="id_connection">Connection</label>
+            <select class="input" name="connection" id="id_connection" required>
+              {% for c in member_form.connection.field.queryset %}
+                <option value="{{ c.id }}">{{ c.name }} — {{ c.get_provider_code_display }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="label" for="id_weight">Weight</label>
+            <input type="number" min="0" class="input" name="weight" id="id_weight" value="1">
+          </div>
+          <div>
+            <label class="label" for="id_priority">Priority</label>
+            <input type="number" min="0" class="input" name="priority" id="id_priority" value="0">
+          </div>
+          <button type="submit" class="btn-primary">Add</button>
+        </form>
+      </div>
+    </section>
+
+    <section x-show="tab==='warmup'" x-cloak>
+      <form method="post" action="{% url 'pools:warmup_save' pool.id %}" class="card">
+        {% csrf_token %}
+        <div class="card-header">
+          <h2 class="text-sm font-semibold text-slate-900">Warm-up plan</h2>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-600">
+            <input type="checkbox" name="enabled" {% if warmup_form.enabled.value %}checked{% endif %}> Enabled
+          </label>
+        </div>
+        <div class="card-body grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label class="label" for="id_curve">Curve</label>
+            <select class="input" name="curve" id="id_curve">
+              {% for value, label in warmup_form.curve.field.choices %}
+                <option value="{{ value }}" {% if warmup_form.curve.value == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="label" for="id_start_date">Start date</label>
+            <input type="date" class="input" name="start_date" id="id_start_date" value="{{ warmup_form.start_date.value|date:'Y-m-d' }}">
+          </div>
+          <div class="md:col-span-2">
+            <label class="label" for="id_daily_caps_csv">Custom curve (comma-separated daily caps)</label>
+            <textarea class="input font-mono text-xs" rows="3" name="daily_caps_csv" id="id_daily_caps_csv" placeholder="50, 100, 500, 1000, ...">{{ warmup_form.daily_caps_csv.value|default_if_none:'' }}</textarea>
+            <p class="mt-1 text-xs text-slate-500">Only used when curve = Custom. Empty fields fall back to the preset curve.</p>
+          </div>
+        </div>
+        <div class="card-header bg-slate-50 justify-end">
+          <button type="submit" class="btn-primary text-xs">Save warm-up</button>
+        </div>
+      </form>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

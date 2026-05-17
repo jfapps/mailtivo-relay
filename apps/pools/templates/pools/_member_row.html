@@ -1,0 +1,33 @@
+{% load static %}
+<tr id="pool-member-{{ m.id }}">
+  <td>
+    <div class="font-medium text-slate-900">{{ m.connection.name }}</div>
+    {% if m.connection.status == 'down' %}<span class="badge-red">Down</span>
+    {% elif m.connection.status == 'degraded' %}<span class="badge-yellow">Degraded</span>
+    {% elif m.connection.status == 'healthy' %}<span class="badge-green">Healthy</span>
+    {% else %}<span class="badge-slate">Unknown</span>{% endif %}
+  </td>
+  <td><span class="badge-slate">{{ m.connection.get_provider_code_display }}</span></td>
+  <td>
+    <form hx-post="{% url 'pools:member_update' pool.id m.id %}"
+          hx-trigger="change delay:200ms from:input[name=weight]"
+          hx-target="#pool-member-{{ m.id }}"
+          hx-swap="outerHTML"
+          class="flex items-center gap-2">
+      {% csrf_token %}
+      <input type="range" min="0" max="100" step="1" name="weight" value="{{ m.weight }}" class="grow"
+             x-data="{ v: {{ m.weight }} }" x-on:input="v=$event.target.value" />
+      <output class="w-10 text-xs text-slate-700">{{ m.weight }}</output>
+    </form>
+  </td>
+  <td class="text-xs text-slate-500">{{ m.priority }}</td>
+  <td>
+    {% if m.enabled %}<span class="badge-green">On</span>{% else %}<span class="badge-slate">Off</span>{% endif %}
+  </td>
+  <td class="text-right">
+    <form method="post" action="{% url 'pools:member_remove' pool.id m.id %}" class="inline" onsubmit="return confirm('Remove this connection from the pool?');">
+      {% csrf_token %}
+      <button type="submit" class="btn-ghost text-xs text-red-600 hover:bg-red-50">Remove</button>
+    </form>
+  </td>
+</tr>

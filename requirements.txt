@@ -1,0 +1,32 @@
+# Core
+Django>=6.0,<6.1
+psycopg[binary]>=3.2
+dj-database-url>=2.3
+python-decouple>=3.8
+
+# Async tasks
+django-q2>=1.10
+croniter>=2.0
+
+# API
+djangorestframework>=3.15
+
+# UI
+django-htmx>=1.26
+django-tailwind>=3.8
+
+# Auth & security
+django-allauth>=65.13
+argon2-cffi>=23.1
+cryptography>=43.0
+PyJWT[crypto]>=2.9  # needed by allauth Google provider (id_token verification)
+
+# Webhooks / IDs
+svix>=1.30
+python-ulid>=3.0
+
+# HTTP
+requests>=2.32
+
+# Image handling (allauth + ImageField on WorkspaceSettings.branding_logo)
+Pillow>=11.0

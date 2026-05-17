@@ -1,0 +1,43 @@
+<div class="space-y-6">
+  <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="card card-body">
+      <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Sent · last {{ kpis.window_hours }}h</div>
+      <div class="mt-2 text-3xl font-semibold text-slate-900">{{ kpis.sent }}</div>
+      <div class="mt-1 text-xs text-slate-400">{{ kpis.queued }} queued / sending</div>
+    </div>
+    <div class="card card-body">
+      <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Delivery rate</div>
+      <div class="mt-2 text-3xl font-semibold text-slate-900">{{ kpis.delivery_rate|floatformat:1 }}<span class="text-base text-slate-400">%</span></div>
+      <div class="mt-1 text-xs text-slate-400">{{ kpis.delivered }} delivered</div>
+    </div>
+    <div class="card card-body">
+      <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Bounce rate</div>
+      <div class="mt-2 text-3xl font-semibold {% if kpis.bounce_rate >= 5 %}text-red-600{% else %}text-slate-900{% endif %}">{{ kpis.bounce_rate|floatformat:1 }}<span class="text-base text-slate-400">%</span></div>
+      <div class="mt-1 text-xs text-slate-400">{{ kpis.bounced }} bounced</div>
+    </div>
+    <div class="card card-body">
+      <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Complaints / failed</div>
+      <div class="mt-2 text-3xl font-semibold text-slate-900">{{ kpis.complained }} <span class="text-base text-slate-400">/ {{ kpis.failed }}</span></div>
+      <div class="mt-1 text-xs text-slate-400">last {{ kpis.window_hours }}h</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2 class="text-sm font-semibold text-slate-900">Hourly throughput</h2>
+      <span class="text-xs text-slate-500">peak {{ kpis.sparkline_peak }}/h</span>
+    </div>
+    <div class="card-body">
+      {% if kpis.sparkline_peak %}
+        <div class="flex h-24 items-end gap-1">
+          {% for v in kpis.sparkline %}
+            {% widthratio v kpis.sparkline_peak 100 as pct %}
+            <div class="flex-1 rounded-t bg-brand-500/80" style="height: {{ pct|default:1 }}%" title="{{ v }}"></div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="flex h-24 items-center justify-center text-xs text-slate-400">No messages in the window yet.</div>
+      {% endif %}
+    </div>
+  </section>
+</div>

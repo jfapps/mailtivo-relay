@@ -1,0 +1,32 @@
+{
+  "event": "MessageBounced",
+  "timestamp": 1747500100.0,
+  "uuid": "00000000-0000-0000-0000-postal-bnc-01",
+  "payload": {
+    "original_message": {
+      "id": 100001,
+      "token": "tok-msg-sent-01",
+      "direction": "outgoing",
+      "message_id": "<msg-100001@postal.example.test>",
+      "to": "recipient@example.test",
+      "from": "sender@example.test",
+      "subject": "Hello",
+      "timestamp": 1747500000.0
+    },
+    "bounce": {
+      "id": 100002,
+      "token": "tok-bnc-01",
+      "direction": "incoming",
+      "to": "sender@example.test",
+      "from": "MAILER-DAEMON@mx.example.test",
+      "subject": "Undelivered Mail Returned to Sender",
+      "timestamp": 1747500100.0
+    },
+    "message": {
+      "id": 100001,
+      "token": "tok-msg-sent-01",
+      "to": "recipient@example.test"
+    },
+    "details": "554 5.1.1 The email account that you tried to reach does not exist."
+  }
+}

@@ -1,0 +1,37 @@
+{% extends "accounts/_layout.html" %}
+{% block title %}Get started · Mailtivo-Relay{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-slate-900">Get Mailtivo-Relay running</h1>
+  <p class="mt-1 text-sm text-slate-500">Name your workspace and create the owner account. You can invite teammates afterward.</p>
+</div>
+<form method="post" class="space-y-4" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert-error">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div>
+    <label class="label" for="id_workspace_name">Workspace name</label>
+    <input class="input" type="text" name="workspace_name" id="id_workspace_name" value="{{ form.workspace_name.value|default_if_none:'' }}" required>
+    {% if form.workspace_name.errors %}<div class="field-error">{{ form.workspace_name.errors|join:" " }}</div>{% endif %}
+  </div>
+  <div>
+    <label class="label" for="id_email">Your email</label>
+    <input class="input" type="email" name="email" id="id_email" value="{{ form.email.value|default_if_none:'' }}" required>
+    {% if form.email.errors %}<div class="field-error">{{ form.email.errors|join:" " }}</div>{% endif %}
+  </div>
+  <div>
+    <label class="label" for="id_display_name">Display name <span class="text-slate-400">(optional)</span></label>
+    <input class="input" type="text" name="display_name" id="id_display_name" value="{{ form.display_name.value|default_if_none:'' }}">
+  </div>
+  <div>
+    <label class="label" for="id_password">Password <span class="text-slate-400">(min 12 characters)</span></label>
+    <input class="input" type="password" name="password" id="id_password" required minlength="12">
+    {% if form.password.errors %}<div class="field-error">{{ form.password.errors|join:" " }}</div>{% endif %}
+  </div>
+  <div>
+    <label class="label" for="id_password_confirm">Confirm password</label>
+    <input class="input" type="password" name="password_confirm" id="id_password_confirm" required minlength="12">
+    {% if form.password_confirm.errors %}<div class="field-error">{{ form.password_confirm.errors|join:" " }}</div>{% endif %}
+  </div>
+  <button type="submit" class="btn-primary w-full">Create workspace</button>
+</form>
+{% endblock %}

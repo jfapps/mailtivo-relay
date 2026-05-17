@@ -1,0 +1,15 @@
+{
+  "event": "MessageLinkClicked",
+  "timestamp": 1747500200.0,
+  "uuid": "00000000-0000-0000-0000-postal-clk-01",
+  "payload": {
+    "message": {
+      "id": 100001,
+      "token": "tok-msg-sent-01",
+      "to": "recipient@example.test"
+    },
+    "url": "https://example.test/landing?ref=newsletter",
+    "ip_address": "203.0.113.42",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) AppleWebKit/537.36"
+  }
+}

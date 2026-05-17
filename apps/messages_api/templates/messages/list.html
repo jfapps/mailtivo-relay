@@ -1,0 +1,32 @@
+{% extends "panel/base.html" %}
+{% block title %}Messages{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Messages</span>{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <header>
+    <h1 class="text-2xl font-semibold text-slate-900">Messages</h1>
+    <p class="mt-1 text-sm text-slate-500">Every send the relay has accepted. Click a row for headers, body, and the event timeline.</p>
+  </header>
+
+  <form class="card-body card flex flex-wrap items-end gap-3" hx-get="{% url 'messages_panel:list' %}" hx-target="#messages-region" hx-trigger="change from:select, keyup changed delay:300ms from:input[name=q], submit" hx-push-url="true">
+    <div class="grow">
+      <label class="label" for="id_q">Search</label>
+      <input class="input" type="search" name="q" id="id_q" value="{{ q }}" placeholder="subject, from, message id…">
+    </div>
+    <div>
+      <label class="label" for="id_status">Status</label>
+      <select class="input" name="status" id="id_status">
+        <option value="">All</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if active_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-secondary">Apply</button>
+  </form>
+
+  <div id="messages-region">
+    {% include "messages/_list_table.html" %}
+  </div>
+</div>
+{% endblock %}

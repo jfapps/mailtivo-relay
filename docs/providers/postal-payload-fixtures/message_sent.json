@@ -1,0 +1,23 @@
+{
+  "event": "MessageSent",
+  "timestamp": 1747500000.0,
+  "uuid": "00000000-0000-0000-0000-postal-sent01",
+  "payload": {
+    "message": {
+      "id": 100001,
+      "token": "tok-msg-sent-01",
+      "direction": "outgoing",
+      "message_id": "<msg-100001@postal.example.test>",
+      "to": "recipient@example.test",
+      "from": "sender@example.test",
+      "subject": "Hello",
+      "timestamp": 1747500000.0
+    },
+    "status": "Sent",
+    "details": "Message accepted by 1.2.3.4 (mx.example.test).",
+    "output": "250 2.0.0 OK",
+    "sent_with_ssl": true,
+    "timestamp": 1747500000.0,
+    "time": 0.85
+  }
+}

@@ -1,0 +1,49 @@
+{% extends "panel/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="space-y-8">
+  <header class="flex items-end justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Dashboard</h1>
+      <p class="mt-1 text-sm text-slate-500">Welcome back, {{ request.user.get_short_name }}.</p>
+    </div>
+    <div class="text-xs text-slate-400">Last 24 hours · auto-refreshes every 30s</div>
+  </header>
+
+  <div id="kpi-region"
+       hx-get="{% url 'panel:kpis' %}"
+       hx-trigger="every 30s"
+       hx-swap="innerHTML">
+    {% include "panel/_kpis.html" %}
+  </div>
+
+  <section class="card">
+    <div class="card-header">
+      <h2 class="text-sm font-semibold text-slate-900">Get sending in three steps</h2>
+    </div>
+    <ol class="card-body space-y-4">
+      <li class="flex items-start gap-3">
+        <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">1</span>
+        <div>
+          <div class="text-sm font-medium text-slate-900"><a class="hover:underline" href="{% url 'connections:list' %}">Add a provider connection</a></div>
+          <p class="text-xs text-slate-500">Postal or Resend. You can add both and split traffic.</p>
+        </div>
+      </li>
+      <li class="flex items-start gap-3">
+        <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">2</span>
+        <div>
+          <div class="text-sm font-medium text-slate-900"><a class="hover:underline" href="{% url 'pools:list' %}">Build a pool</a></div>
+          <p class="text-xs text-slate-500">Group your connections, set routing strategy + weights, optionally enable warmup.</p>
+        </div>
+      </li>
+      <li class="flex items-start gap-3">
+        <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">3</span>
+        <div>
+          <div class="text-sm font-medium text-slate-900"><a class="hover:underline" href="{% url 'api_keys:list' %}">Issue an API key and send</a></div>
+          <p class="text-xs text-slate-500">Drop-in compatible with the Resend SDK — just override <span class="code">base_url</span>.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+</div>
+{% endblock %}

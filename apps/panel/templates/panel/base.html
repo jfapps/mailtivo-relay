@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Mailtivo-Relay{% endblock %} · {{ workspace.name|default:"Mailtivo-Relay" }}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}" />
+  <link rel="preconnect" href="https://rsms.me/">
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+  <script defer src="https://unpkg.com/alpinejs@3.14.7/dist/cdn.min.js"></script>
+</head>
+<body class="h-full">
+  <div class="flex h-full min-h-screen">
+    {% include "panel/_sidebar.html" %}
+    <div class="flex min-h-screen flex-1 flex-col">
+      {% include "panel/_topbar.html" %}
+      <main class="flex-1 px-6 py-8 md:px-10">
+        <div class="mx-auto max-w-6xl">
+          {% if messages %}
+            <div class="mb-6 space-y-2">
+              {% for m in messages %}
+                <div class="{% if 'error' in m.tags %}alert-error{% elif 'success' in m.tags %}alert-success{% else %}alert-info{% endif %}">
+                  {{ m }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+    </div>
+  </div>
+  <div id="toast-region" class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center" hx-swap-oob="innerHTML"></div>
+</body>
+</html>

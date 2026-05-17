@@ -1,0 +1,19 @@
+{% extends "accounts/_layout.html" %}
+{% block title %}Email sign-in link · Mailtivo-Relay{% endblock %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold text-slate-900">Sign in by email</h1>
+  <p class="mt-1 text-sm text-slate-500">We'll send a one-time link that signs you in. It expires in 15 minutes.</p>
+</div>
+<form method="post" class="space-y-4" novalidate>
+  {% csrf_token %}
+  <div>
+    <label class="label" for="id_email">Email</label>
+    <input class="input" type="email" name="email" id="id_email" value="{{ form.email.value|default_if_none:'' }}" required>
+  </div>
+  <button type="submit" class="btn-primary w-full">Send sign-in link</button>
+</form>
+{% endblock %}
+{% block below_card %}
+<p class="mt-6 text-center text-xs text-slate-500"><a href="{% url 'accounts:login' %}" class="font-medium">Back to password sign-in</a></p>
+{% endblock %}

@@ -24,7 +24,9 @@ class PoolMemberForm(forms.ModelForm):
 
     class Meta:
         model = PoolMember
-        fields = ["connection", "weight", "priority", "enabled"]
+        # `enabled` is intentionally absent here so the model default (True) wins
+        # on create — toggling lives on the per-row HTMX endpoint (member_update).
+        fields = ["connection", "weight", "priority"]
 
     def __init__(self, *args, pool: Pool | None = None, **kwargs):
         super().__init__(*args, **kwargs)

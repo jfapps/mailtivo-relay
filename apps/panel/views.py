@@ -105,7 +105,28 @@ def _kpi_data(window_hours: int = 24) -> dict:
 
 @login_required(login_url="/login/")
 def dashboard(request: HttpRequest) -> HttpResponse:
-    return render(request, "panel/dashboard.html", {"kpis": _kpi_data()})
+    from apps.api_keys.models import APIKey
+    from apps.connections.models import Connection
+    from apps.pools.models import PoolMember
+
+    has_connection = Connection.objects.exists()
+    has_populated_pool = PoolMember.objects.exists()
+    has_api_key = APIKey.objects.filter(revoked_at__isnull=True).exists()
+    setup_complete = has_connection and has_populated_pool and has_api_key
+
+    return render(
+        request,
+        "panel/dashboard.html",
+        {
+            "kpis": _kpi_data(),
+            "setup": {
+                "connection": has_connection,
+                "pool": has_populated_pool,
+                "api_key": has_api_key,
+                "complete": setup_complete,
+            },
+        },
+    )
 
 
 @login_required(login_url="/login/")

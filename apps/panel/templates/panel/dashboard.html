@@ -17,33 +17,43 @@
     {% include "panel/_kpis.html" %}
   </div>
 
-  <section class="card">
-    <div class="card-header">
-      <h2 class="text-sm font-semibold text-slate-900">Get sending in three steps</h2>
-    </div>
-    <ol class="card-body space-y-4">
-      <li class="flex items-start gap-3">
-        <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">1</span>
-        <div>
-          <div class="text-sm font-medium text-slate-900"><a class="hover:underline" href="{% url 'connections:list' %}">Add a provider connection</a></div>
-          <p class="text-xs text-slate-500">Postal or Resend. You can add both and split traffic.</p>
-        </div>
-      </li>
-      <li class="flex items-start gap-3">
-        <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">2</span>
-        <div>
-          <div class="text-sm font-medium text-slate-900"><a class="hover:underline" href="{% url 'pools:list' %}">Build a pool</a></div>
-          <p class="text-xs text-slate-500">Group your connections, set routing strategy + weights, optionally enable warmup.</p>
-        </div>
-      </li>
-      <li class="flex items-start gap-3">
-        <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">3</span>
-        <div>
-          <div class="text-sm font-medium text-slate-900"><a class="hover:underline" href="{% url 'api_keys:list' %}">Issue an API key and send</a></div>
-          <p class="text-xs text-slate-500">Drop-in compatible with the Resend SDK — just override <span class="code">base_url</span>.</p>
-        </div>
-      </li>
-    </ol>
-  </section>
+  {% if not setup.complete %}
+    <section class="card">
+      <div class="card-header">
+        <h2 class="text-sm font-semibold text-slate-900">Get sending in three steps</h2>
+      </div>
+      <ol class="card-body space-y-4">
+        {% with done_classes="bg-emerald-100 text-emerald-700" pending_classes="bg-brand-100 text-brand-700" %}
+          <li class="flex items-start gap-3{% if setup.connection %} opacity-60{% endif %}">
+            <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold {% if setup.connection %}{{ done_classes }}{% else %}{{ pending_classes }}{% endif %}">
+              {% if setup.connection %}✓{% else %}1{% endif %}
+            </span>
+            <div>
+              <div class="text-sm font-medium text-slate-900"><a class="hover:underline" href="{% url 'connections:list' %}">Add a provider connection</a></div>
+              <p class="text-xs text-slate-500">Postal or Resend. You can add both and split traffic.</p>
+            </div>
+          </li>
+          <li class="flex items-start gap-3{% if setup.pool %} opacity-60{% endif %}">
+            <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold {% if setup.pool %}{{ done_classes }}{% else %}{{ pending_classes }}{% endif %}">
+              {% if setup.pool %}✓{% else %}2{% endif %}
+            </span>
+            <div>
+              <div class="text-sm font-medium text-slate-900"><a class="hover:underline" href="{% url 'pools:list' %}">Build a pool</a></div>
+              <p class="text-xs text-slate-500">Group your connections, set routing strategy + weights, optionally enable warmup.</p>
+            </div>
+          </li>
+          <li class="flex items-start gap-3{% if setup.api_key %} opacity-60{% endif %}">
+            <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold {% if setup.api_key %}{{ done_classes }}{% else %}{{ pending_classes }}{% endif %}">
+              {% if setup.api_key %}✓{% else %}3{% endif %}
+            </span>
+            <div>
+              <div class="text-sm font-medium text-slate-900"><a class="hover:underline" href="{% url 'api_keys:list' %}">Issue an API key and send</a></div>
+              <p class="text-xs text-slate-500">Drop-in compatible with the Resend SDK — just override <span class="code">base_url</span>.</p>
+            </div>
+          </li>
+        {% endwith %}
+      </ol>
+    </section>
+  {% endif %}
 </div>
 {% endblock %}

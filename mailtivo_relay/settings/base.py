@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "apps.suppressions",
     "apps.sending",
     "apps.audit",
+    "apps.tools",
 ]
 
 MIDDLEWARE = [
@@ -149,6 +150,9 @@ RELAY_FERNET_KEY_OLD = config("RELAY_FERNET_KEY_OLD", default="")  # for rotatio
 
 # Magic link expiry (minutes).
 MAGIC_LINK_TTL_MINUTES = config("MAGIC_LINK_TTL_MINUTES", default=15, cast=int)
+
+# GitHub repo (owner/name) used by the opt-in update check. Override for forks.
+GITHUB_REPO = config("RELAY_GITHUB_REPO", default="your-org/mailtivo-relay")
 
 # Django-Q2 — ORM broker by default so solo self-hosters need no Redis.
 Q_CLUSTER = {

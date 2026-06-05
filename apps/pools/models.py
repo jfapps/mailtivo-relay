@@ -17,7 +17,18 @@ class Pool(models.Model):
         (STRATEGY_ROUND_ROBIN, "Round-robin"),
     ]
 
+    MODE_LIVE = "live"
+    MODE_CAPTURE = "capture"
+    MODE_CHOICES = [
+        (MODE_LIVE, "Live — route to upstream providers"),
+        (MODE_CAPTURE, "Capture — store in the Test Inbox, never send"),
+    ]
+
     name = models.CharField(max_length=120, unique=True)
+    # Capture pools swallow mail into the internal Test Inbox instead of routing
+    # it to a provider — a built-in sandbox for development/testing (no members,
+    # no real delivery). Routing is bypassed entirely for these.
+    mode = models.CharField(max_length=12, choices=MODE_CHOICES, default=MODE_LIVE)
     routing_strategy = models.CharField(max_length=24, choices=STRATEGY_CHOICES, default=STRATEGY_WEIGHTED)
     health_skip_enabled = models.BooleanField(default=True)
     recent_5xx_threshold = models.PositiveIntegerField(default=5)
@@ -34,6 +45,10 @@ class Pool(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def is_capture(self) -> bool:
+        return self.mode == self.MODE_CAPTURE
 
 
 class PoolMember(models.Model):

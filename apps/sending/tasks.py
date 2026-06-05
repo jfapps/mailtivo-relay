@@ -148,3 +148,24 @@ def enqueue_message(message: Message) -> str:
         str(message.id),
         task_name=f"send-{message.id}",
     )
+
+
+def capture_message(message: Message) -> str:
+    """Test-mode 'send': store the email, never dispatch it to a provider.
+
+    Used for sends routed through a capture (sandbox) pool. Runs synchronously in
+    the request path — no Q2 worker required — so the captured email shows up in
+    the Test Inbox immediately. Returns the final Message status.
+    """
+    message.sandbox = True
+    message.status = Message.STATUS_CAPTURED
+    message.sent_at = timezone.now()
+    message.provider_message_id = f"captured-{message.id}"
+    message.last_error = ""
+    message.append_attempt(
+        connection_id=None, ok=True, provider_id=message.provider_message_id,
+    )
+    message.save(update_fields=[
+        "sandbox", "status", "sent_at", "provider_message_id", "last_error", "attempts",
+    ])
+    return message.status

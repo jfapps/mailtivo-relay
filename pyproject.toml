@@ -1,5 +1,6 @@
 [project]
 name = "mailtivo-relay"
+# Canonical version lives in mailtivo_relay/__init__.py (__version__); keep in sync.
 version = "1.0.0"
 description = "Self-hosted, Resend-compatible email relay built on Django 6 + Django-Q2."
 license = { text = "MIT" }

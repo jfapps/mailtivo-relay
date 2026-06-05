@@ -52,3 +52,45 @@ def test_scope_checks():
     key2, _ = APIKey.issue(name="t2", scopes=["*"])
     assert key2.has_scope("send")
     assert key2.has_scope("read")
+
+
+@pytest.mark.django_db
+def test_set_pool_reassigns_key(admin_client):
+    from apps.pools.models import Pool
+
+    live = Pool.objects.create(name="live", mode=Pool.MODE_LIVE)
+    capture = Pool.objects.create(name="sandbox", mode=Pool.MODE_CAPTURE)
+    key, _ = APIKey.issue(name="app", scopes=["*"], default_pool=live)
+
+    r = admin_client.post(reverse("api_keys:set_pool", args=[key.id]), {"default_pool": capture.id})
+    assert r.status_code == 302
+    key.refresh_from_db()
+    assert key.default_pool_id == capture.id
+
+
+@pytest.mark.django_db
+def test_set_pool_clears_to_none(admin_client):
+    from apps.pools.models import Pool
+
+    live = Pool.objects.create(name="live", mode=Pool.MODE_LIVE)
+    key, _ = APIKey.issue(name="app", scopes=["*"], default_pool=live)
+
+    r = admin_client.post(reverse("api_keys:set_pool", args=[key.id]), {"default_pool": ""})
+    assert r.status_code == 302
+    key.refresh_from_db()
+    assert key.default_pool_id is None
+
+
+@pytest.mark.django_db
+def test_set_pool_404_on_revoked_key(admin_client):
+    from apps.pools.models import Pool
+
+    from django.utils import timezone
+
+    capture = Pool.objects.create(name="sandbox", mode=Pool.MODE_CAPTURE)
+    key, _ = APIKey.issue(name="app", scopes=["*"])
+    key.revoked_at = timezone.now()
+    key.save(update_fields=["revoked_at"])
+
+    r = admin_client.post(reverse("api_keys:set_pool", args=[key.id]), {"default_pool": capture.id})
+    assert r.status_code == 404

@@ -35,6 +35,14 @@ make run
 make worker
 ```
 
+**Dev sign-in shortcut:** when running under `DEBUG=True` (the `make run` dev
+server, or the containerized stack via `./scripts/dev-local.sh`), visit
+`/dev-login/` to sign in as the first workspace admin without a password (or
+`/dev-login/?email=...` to impersonate a specific user). The route only exists
+under `DEBUG` and the view 404s otherwise, so it can't leak into production.
+Note `./scripts/prod-local.sh` runs `settings.prod` (`DEBUG=False`), where the
+route is absent. See the README's *Development* section for details.
+
 ## What's required for a PR
 
 - `make check` is green (ruff + mypy + pytest).

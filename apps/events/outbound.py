@@ -33,6 +33,7 @@ def _payload_for(event: Event, *, message=None) -> dict:
     return {
         "id": f"evt_{event.id}",
         "type": event.type,
+        "test": event.simulated,
         "occurred_at": event.occurred_at.isoformat() if event.occurred_at else None,
         "data": {
             "message_id": message.id if message else None,
@@ -92,6 +93,7 @@ def deliver_one(delivery_id: int) -> str:
                 "Mailtivo-Timestamp": ts,
                 "Mailtivo-Signature": sig,
                 "Mailtivo-Event": event.type,
+                "Mailtivo-Test": "true" if event.simulated else "false",
             },
             timeout=HTTP_TIMEOUT,
         )

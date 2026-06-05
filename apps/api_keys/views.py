@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from apps.audit.models import AuditLog
+from apps.pools.models import Pool
 
 from .forms import IssueKeyForm
 from .models import APIKey
@@ -42,17 +43,40 @@ def list_view(request: HttpRequest) -> HttpResponse:
         # Don't redirect — we need to render the page once to surface the secret.
         form = IssueKeyForm()
 
-    keys = APIKey.objects.all()
+    keys = APIKey.objects.select_related("default_pool").all()
     return render(
         request,
         "api_keys/list.html",
         {
             "form": form,
             "keys": keys,
+            "pools": Pool.objects.all(),
             "issued_secret": issued_secret,
             "issued_key": issued_key,
         },
     )
+
+
+@_admin_required
+@require_http_methods(["POST"])
+def set_pool_view(request: HttpRequest, pk: int) -> HttpResponse:
+    """Reassign an active key's default pool — e.g. flip it between a live pool
+    and a capture (sandbox) pool without revoking and reissuing the secret."""
+    key = get_object_or_404(APIKey, pk=pk, revoked_at__isnull=True)
+    pool_id = request.POST.get("default_pool", "").strip()
+    new_pool = get_object_or_404(Pool, pk=pool_id) if pool_id else None
+
+    old_name = getattr(key.default_pool, "name", None)
+    key.default_pool = new_pool
+    key.save(update_fields=["default_pool"])
+    AuditLog.record(
+        request.user,
+        action="apikey.pool_changed",
+        target=key.name,
+        detail={"from": old_name, "to": getattr(new_pool, "name", None)},
+    )
+    messages.success(request, f"Updated pool for “{key.name}”.")
+    return redirect(reverse("api_keys:list"))
 
 
 @_admin_required

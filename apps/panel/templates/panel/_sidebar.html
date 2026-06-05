@@ -12,9 +12,14 @@
       Dashboard
     </a>
     {% url 'messages_panel:list' as messages_url %}
-    <a href="{{ messages_url }}" class="sidebar-link" {% if '/app/messages/' in request.path %}aria-current="page"{% endif %}>
+    <a href="{{ messages_url }}" class="sidebar-link" {% if '/app/messages/' in request.path and request.resolver_match.url_name != 'test_inbox' %}aria-current="page"{% endif %}>
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       Messages
+    </a>
+    {% url 'messages_panel:test_inbox' as test_inbox_url %}
+    <a href="{{ test_inbox_url }}" class="sidebar-link" {% if request.resolver_match.url_name == 'test_inbox' %}aria-current="page"{% endif %}>
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 3h6M10 3v5L5 18a2 2 0 002 3h10a2 2 0 002-3l-5-10V3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Test Inbox
     </a>
     {% url 'connections:list' as connections_url %}
     <a href="{{ connections_url }}" class="sidebar-link" {% if '/app/connections/' in request.path %}aria-current="page"{% endif %}>
@@ -40,6 +45,11 @@
     <a href="{{ webhooks_url }}" class="sidebar-link" {% if '/app/webhooks/' in request.path %}aria-current="page"{% endif %}>
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M14 7l-5 10M9 7h6v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Outbound webhooks
+    </a>
+    {% url 'tools:index' as tools_url %}
+    <a href="{{ tools_url }}" class="sidebar-link" {% if '/app/tools/' in request.path %}aria-current="page"{% endif %}>
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4l-2.5 2.5-2.5-.5-.5-2.5 2.5-2.5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Tools
     </a>
 
     <div class="mt-4 px-3 text-[11px] uppercase tracking-wide text-slate-500">Workspace</div>
@@ -73,5 +83,13 @@
       {% csrf_token %}
       <button type="submit" class="w-full rounded-lg bg-slate-800 px-3 py-1.5 text-left text-xs text-slate-300 hover:bg-slate-700 hover:text-white">Sign out</button>
     </form>
+    <div class="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+      <span>v{{ app_version }}</span>
+      {% if update_available %}
+        <a href="{% url 'panel:settings' %}#updates" title="A newer release is available">
+          <span class="badge-yellow">Update available</span>
+        </a>
+      {% endif %}
+    </div>
   </div>
 </aside>

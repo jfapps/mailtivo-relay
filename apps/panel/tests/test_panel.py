@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest import mock
+
 import pytest
 from allauth.socialaccount.models import SocialApp
 from django.urls import reverse
@@ -141,6 +143,45 @@ def test_member_remove_blocks_self(admin_client, owner):
     assert r.status_code == 302
     owner.refresh_from_db()
     assert owner.is_active is True
+
+
+@pytest.mark.django_db
+def test_sidebar_shows_version(admin_client):
+    from mailtivo_relay import __version__
+
+    r = admin_client.get(reverse("panel:dashboard"))
+    assert f"v{__version__}".encode() in r.content
+
+
+@pytest.mark.django_db
+def test_update_available_badge_shows_when_behind(admin_client):
+    ws = WorkspaceSettings.load()
+    ws.latest_version = "99.0.0"
+    ws.save()
+    r = admin_client.get(reverse("panel:dashboard"))
+    assert b"Update available" in r.content
+
+
+@pytest.mark.django_db
+def test_settings_updates_toggle_persists(admin_client):
+    r = admin_client.post(reverse("panel:settings"), {"section": "updates"})  # checkbox unchecked
+    assert r.status_code == 302
+    assert WorkspaceSettings.load().update_check_enabled is False
+
+    r = admin_client.post(reverse("panel:settings"), {"section": "updates", "update_check_enabled": "on"})
+    assert r.status_code == 302
+    assert WorkspaceSettings.load().update_check_enabled is True
+
+
+@pytest.mark.django_db
+def test_settings_check_now_enqueues_task(admin_client):
+    with mock.patch("django_q.tasks.async_task") as async_task:
+        r = admin_client.post(
+            reverse("panel:settings"),
+            {"section": "updates", "update_check_enabled": "on", "check_now": "1"},
+        )
+    assert r.status_code == 302
+    async_task.assert_called_once_with("apps.core.updates.check_for_update")
 
 
 @pytest.mark.django_db

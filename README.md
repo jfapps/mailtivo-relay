@@ -53,6 +53,23 @@ print(resend.Emails.send({
 }))
 ```
 
+## Updating
+
+```bash
+cd mailtivo-relay
+git pull
+docker compose up -d --build   # the entrypoint runs migrations automatically
+```
+
+The panel shows the running version in the sidebar footer, and flags an
+**Update available** badge there (and on **Settings → Version & updates**) when a
+newer GitHub release exists. That check is an opt-in, read-only daily lookup of
+the latest release tag — no usage data is sent, and you can disable it on the
+Settings page.
+
+Running a fork? Point the check at your repo with `RELAY_GITHUB_REPO=owner/name`
+in `.env`. The version itself is defined in `mailtivo_relay/__init__.py`.
+
 ## SDK swap
 
 | SDK | Change |
@@ -61,11 +78,40 @@ print(resend.Emails.send({
 | Node   | `new Resend("mr_live_...", { baseUrl: "https://your-relay/api/v1" })` |
 | cURL   | replace `https://api.resend.com` with `https://your-relay/api/v1` |
 
+## Testing mode (capture pools)
+
+Point a dev/staging project at the relay and have its emails **captured for
+inspection instead of actually sent** — like Mailpit/Mailtrap, built in.
+
+1. **Pools → New pool**, set **Mode = Capture**, name it e.g. `Sandbox`. A capture
+   pool needs no provider connections.
+2. **API Keys → Issue key**, set **Default pool = Sandbox**.
+3. Point your project's `RESEND_API_KEY` at that key. Send exactly as you would in
+   production — no code changes.
+
+Every send through a capture-pool key is stored and shown in the **Test Inbox**
+(rendered HTML, text, headers, raw source), marked `captured`, and **never
+delivered**. Capture runs synchronously in the request, so it works with only the
+`web` process — no `worker` required. Suppression filtering is skipped for capture
+pools so you can test sends to any address.
+
+**Switch a key between live and test** in one click from **API Keys** — each key
+shows its pool as an inline dropdown; point it at a capture pool to test, back at a
+live pool to ship. No reissuing secrets.
+
+**Simulate webhook events.** From a captured message's **Events** tab you can fire a
+`delivered` / `opened` / `clicked` / `bounced` / `complained` event and have it
+delivered to your configured outbound webhooks — so you can test your webhook
+handler end-to-end. Simulated events are flagged `"test": true` in the payload and
+`Mailtivo-Test: true` in the headers, and never touch the live suppression list.
+(Actual webhook *delivery* needs the `worker` running and an enabled endpoint.)
+
 ## What's in v1
 
 - `/emails`, `/emails/:id`, `/api-keys` — Resend-compatible HTTP API
 - Bearer auth, `Idempotency-Key` (24h replay cache), 422 validation, 429 rate limit
-- **Pools** — weighted / failover / round-robin + health-aware skip
+- **Pools** — weighted / failover / round-robin + health-aware skip, or **capture** (testing) pools
+- **Testing mode** — capture pools store sends in the Test Inbox instead of delivering (Mailpit-style)
 - **Warm-up curves** — SendGrid-standard (30d), aggressive (14d), or custom CSV
 - **Suppressions** — pre-send filter, auto-add on hard bounce / complaint, CSV import/export
 - **Unified events** — incoming Postal + Svix-signed Resend webhooks, dedupe on provider event id
@@ -139,11 +185,42 @@ tailwindcss -i mailtivo_relay/static_src/input.css \
             -o mailtivo_relay/static/css/app.css --minify
 ```
 
-Or run everything in containers:
+Or run the whole stack in containers. Two helper scripts wrap docker-compose:
+
+```bash
+# Development: dev server + autoreload + DEBUG=True (settings.dev). Use this for
+# local feature work — the dev-login shortcut below only exists in this mode.
+./scripts/dev-local.sh          # or, on Windows: .\scripts\dev-local.ps1
+
+# Production-parity: gunicorn + secure cookies + DEBUG=False (settings.prod).
+./scripts/prod-local.sh         # or: .\scripts\prod-local.ps1
+```
+
+Both accept `up` (default), `down`, `reset`, `restart`, `logs`, `ps`, `shell`,
+`migrate`, and `build`. Under the hood the dev runner is just:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 ```
+
+### Dev sign-in shortcut
+
+> **Requires dev mode** — the plain `docker compose up` and `prod-local` run on
+> `settings.prod` (`DEBUG=False`), where this route does not exist (you'll get a
+> 404). Start the stack with `dev-local` (or the dev overlay above) to use it.
+
+When `DEBUG=True` you can skip the password form and sign in by visiting a URL:
+
+- `http://localhost:8000/dev-login/` — signs in as the first workspace admin
+- `http://localhost:8000/dev-login/?email=someone@example.test` — signs in as
+  that specific (active) user
+
+A dashed **"Dev sign-in"** button also appears on the login page in this mode.
+
+This is double-guarded: the route is only registered when `DEBUG` is on, **and**
+the view returns 404 if reached with `DEBUG` off — so it can never resolve in
+production. It performs no credential check, so never run a real deployment with
+`DJANGO_DEBUG=True`.
 
 ## Security
 

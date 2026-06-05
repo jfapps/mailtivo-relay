@@ -12,6 +12,7 @@ class PoolForm(forms.ModelForm):
         model = Pool
         fields = [
             "name",
+            "mode",
             "routing_strategy",
             "health_skip_enabled",
             "recent_5xx_threshold",

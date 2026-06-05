@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.http import HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -71,7 +72,11 @@ def login_view(request: HttpRequest) -> HttpResponse:
         register_failure(ip)
     else:
         form = LoginForm()
-    return render(request, "accounts/login.html", {"form": form, "workspace": ws})
+    return render(
+        request,
+        "accounts/login.html",
+        {"form": form, "workspace": ws, "debug": settings.DEBUG},
+    )
 
 
 @require_http_methods(["POST"])
@@ -120,6 +125,37 @@ def magic_link_consume(request: HttpRequest, token: str) -> HttpResponse:
     if user is None:
         messages.error(request, "That sign-in link is invalid or expired.")
         return redirect(reverse("accounts:login"))
+    login(request, user)
+    user.last_login_ip = _client_ip(request)
+    user.save(update_fields=["last_login_ip"])
+    return redirect("/app/")
+
+
+@require_http_methods(["GET"])
+def dev_login(request: HttpRequest) -> HttpResponse:
+    """Dev-only shortcut: sign in by visiting a URL, no credentials needed.
+
+    Hard-guarded on ``settings.DEBUG`` so it 404s in production even if the route
+    were somehow registered. By default it logs in as the first workspace admin;
+    pass ``?email=`` to impersonate a specific active user.
+    """
+    if not settings.DEBUG:
+        raise Http404
+
+    email = request.GET.get("email")
+    qs = User.objects.filter(is_active=True)
+    if email:
+        user = qs.filter(email__iexact=email).first()
+    else:
+        user = qs.filter(is_workspace_admin=True).order_by("date_joined").first()
+
+    if user is None:
+        messages.error(
+            request,
+            "dev-login: no matching active user. Run onboarding first, or check ?email=.",
+        )
+        return redirect(reverse("accounts:login"))
+
     login(request, user)
     user.last_login_ip = _client_ip(request)
     user.save(update_fields=["last_login_ip"])

@@ -120,6 +120,13 @@ class WorkspaceSettings(models.Model):
 
     branding_logo = models.ImageField(upload_to="branding/", blank=True, null=True)
 
+    # Opt-in update check (see apps.core.updates). Cached results of the daily
+    # GitHub Releases lookup; no telemetry is sent.
+    update_check_enabled = models.BooleanField(default=True)
+    latest_version = models.CharField(max_length=40, blank=True)
+    latest_release_url = models.URLField(blank=True)
+    update_checked_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

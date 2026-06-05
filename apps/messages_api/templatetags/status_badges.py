@@ -11,6 +11,7 @@ _STATUS_CSS = {
     "failed": "badge-red",
     "bounced": "badge-red",
     "complained": "badge-red",
+    "captured": "badge-green",
 }
 
 

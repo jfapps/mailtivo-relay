@@ -12,6 +12,7 @@
       <h1 class="text-2xl font-semibold text-slate-900">{{ message.subject|default:"(no subject)" }}</h1>
       <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
         {% status_badge message.status %}
+        {% if message.sandbox %}<span class="badge-slate" title="Captured by a sandbox pool — not delivered">Test</span>{% endif %}
         <span class="font-mono">{{ message.id }}</span>
         <span>·</span>
         <span>{{ message.created_at|date:"M j, Y · H:i" }} UTC</span>
@@ -105,6 +106,23 @@
   </section>
 
   <section x-show="tab==='events'" x-cloak class="card">
+    {% if simulatable_types %}
+      <div class="card-header flex-wrap gap-2">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900">Simulate an event</h3>
+          <p class="text-xs text-slate-500">Fire a fake provider event and deliver it to your outbound webhooks — to test your handler. Delivery needs the worker running and an enabled webhook endpoint.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          {% for t in simulatable_types %}
+            <form method="post" action="{% url 'messages_panel:simulate' message.id %}" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="type" value="{{ t }}">
+              <button type="submit" class="btn-secondary text-xs">{{ t|capfirst }}</button>
+            </form>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
     {% if events %}
       <ol class="card-body space-y-3">
         {% for e in events %}
@@ -113,6 +131,7 @@
             <div class="flex-1">
               <div class="flex items-center gap-2">
                 {% status_badge e.type %}
+                {% if e.simulated %}<span class="badge-slate" title="Simulated from the Test Inbox">test</span>{% endif %}
                 <span class="text-xs text-slate-400">{{ e.occurred_at|date:"M j, H:i:s" }} UTC</span>
               </div>
               {% if e.recipient %}<div class="text-xs text-slate-500">{{ e.recipient }}</div>{% endif %}

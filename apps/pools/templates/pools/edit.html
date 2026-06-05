@@ -22,13 +22,25 @@
   {% if not creating %}
     <nav class="flex gap-2 border-b border-slate-200">
       <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='overview' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='overview'">Overview</button>
-      <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='members' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='members'">Members</button>
-      <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='warmup' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='warmup'">Warm-up</button>
+      {% if not pool.is_capture %}
+        <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='members' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='members'">Members</button>
+        <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='warmup' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='warmup'">Warm-up</button>
+      {% endif %}
     </nav>
   {% endif %}
 
+  {% if not creating and pool.is_capture %}
+    <section x-show="tab==='overview'" x-cloak class="card card-body flex items-start gap-3">
+      <svg class="mt-0.5 h-5 w-5 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none"><path d="M9 3h6M10 3v5L5 18a2 2 0 002 3h10a2 2 0 002-3l-5-10V3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="text-sm text-slate-700">
+        <p class="font-medium text-slate-900">Capture pool — testing only</p>
+        <p class="mt-1">Mail sent through this pool is captured and stored, never delivered to a real provider. Point a project's API key here to test sends safely. View captured mail in the <a class="font-medium text-brand-700 hover:underline" href="{% url 'messages_panel:test_inbox' %}">Test Inbox</a>.</p>
+      </div>
+    </section>
+  {% endif %}
+
   <section x-show="tab==='overview' || {{ creating|yesno:'true,false' }}" {% if not creating %}x-cloak{% endif %}>
-    <form method="post" class="card">
+    <form method="post" class="card" x-data="{ mode: '{{ form.mode.value|default:'live' }}' }">
       {% csrf_token %}
       <div class="card-body grid grid-cols-1 gap-4 md:grid-cols-2">
         <div class="md:col-span-2">
@@ -36,6 +48,18 @@
           <input class="input" id="id_name" name="name" value="{{ form.name.value|default_if_none:'' }}" required>
           {% if form.name.errors %}<div class="field-error">{{ form.name.errors|join:" " }}</div>{% endif %}
         </div>
+        <div class="md:col-span-2">
+          <label class="label" for="id_mode">Mode</label>
+          <select class="input" id="id_mode" name="mode" x-model="mode">
+            {% for value, label in form.mode.field.choices %}
+              <option value="{{ value }}" {% if form.mode.value == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <p class="mt-1 text-xs text-slate-500" x-show="mode==='capture'" x-cloak>
+            Mail sent through this pool is stored in the <strong>Test Inbox</strong> and never delivered. No connections required — point a project's API key here to test sends safely.
+          </p>
+        </div>
+        <div class="contents" x-show="mode!=='capture'">
         <div>
           <label class="label" for="id_routing_strategy">Routing strategy</label>
           <select class="input" id="id_routing_strategy" name="routing_strategy">
@@ -58,6 +82,7 @@
           <label class="label" for="id_recent_bounce_rate_threshold_pct">Bounce-rate threshold (%)</label>
           <input type="number" min="1" max="100" class="input" id="id_recent_bounce_rate_threshold_pct" name="recent_bounce_rate_threshold_pct" value="{{ form.recent_bounce_rate_threshold_pct.value|default:10 }}">
         </div>
+        </div>
       </div>
       <div class="card-header bg-slate-50 justify-end gap-2">
         <a href="{% url 'pools:list' %}" class="btn-ghost text-xs">Cancel</a>
@@ -66,7 +91,7 @@
     </form>
   </section>
 
-  {% if not creating %}
+  {% if not creating and not pool.is_capture %}
     <section x-show="tab==='members'" x-cloak class="space-y-4">
       <div class="card">
         <div class="card-header">

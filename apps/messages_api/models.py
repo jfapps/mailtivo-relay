@@ -29,6 +29,7 @@ class Message(models.Model):
     STATUS_BOUNCED = "bounced"
     STATUS_COMPLAINED = "complained"
     STATUS_SCHEDULED = "scheduled"
+    STATUS_CAPTURED = "captured"  # test-mode send: stored, never dispatched
     STATUS_CHOICES = [
         (STATUS_QUEUED, "Queued"),
         (STATUS_SCHEDULED, "Scheduled"),
@@ -38,9 +39,12 @@ class Message(models.Model):
         (STATUS_FAILED, "Failed"),
         (STATUS_BOUNCED, "Bounced"),
         (STATUS_COMPLAINED, "Complained"),
+        (STATUS_CAPTURED, "Captured"),
     ]
 
-    TERMINAL_STATUSES = {STATUS_DELIVERED, STATUS_FAILED, STATUS_BOUNCED, STATUS_COMPLAINED}
+    TERMINAL_STATUSES = {
+        STATUS_DELIVERED, STATUS_FAILED, STATUS_BOUNCED, STATUS_COMPLAINED, STATUS_CAPTURED,
+    }
 
     id = models.CharField(primary_key=True, max_length=26, default=_new_ulid, editable=False)
 
@@ -67,6 +71,10 @@ class Message(models.Model):
     tags = models.JSONField(default=list, blank=True)
 
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_QUEUED, db_index=True)
+    # True when the message was captured by a test/sandbox (capture) pool rather
+    # than dispatched to a provider. Denormalized so the Test Inbox filter and
+    # history survive the pool FK being nulled (SET_NULL).
+    sandbox = models.BooleanField(default=False, db_index=True)
     provider_message_id = models.CharField(max_length=255, blank=True, db_index=True)
     # Postal returns per-recipient tokens; we keep them to correlate webhooks.
     recipient_tokens = models.JSONField(default=dict, blank=True)

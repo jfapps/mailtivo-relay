@@ -18,12 +18,19 @@
         <tbody>
           {% for p in pools %}
             <tr>
-              <td><a href="{% url 'pools:edit' p.id %}" class="font-medium text-slate-900 hover:underline">{{ p.name }}</a></td>
-              <td><span class="badge-slate">{{ p.get_routing_strategy_display }}</span></td>
+              <td>
+                <a href="{% url 'pools:edit' p.id %}" class="font-medium text-slate-900 hover:underline">{{ p.name }}</a>
+                {% if p.is_capture %}<span class="ml-2 badge-green">Capture</span>{% endif %}
+              </td>
+              <td>{% if p.is_capture %}<span class="text-xs text-slate-400">—</span>{% else %}<span class="badge-slate">{{ p.get_routing_strategy_display }}</span>{% endif %}</td>
               <td class="text-xs text-slate-500">
-                {% for m in p.members.all %}
-                  <span class="badge-slate">{{ m.connection.name }}<span class="ml-1 text-slate-400">w{{ m.weight }}</span></span>
-                {% empty %}<span class="text-slate-400">— empty —</span>{% endfor %}
+                {% if p.is_capture %}
+                  <span class="text-slate-400">Test Inbox</span>
+                {% else %}
+                  {% for m in p.members.all %}
+                    <span class="badge-slate">{{ m.connection.name }}<span class="ml-1 text-slate-400">w{{ m.weight }}</span></span>
+                  {% empty %}<span class="text-slate-400">— empty —</span>{% endfor %}
+                {% endif %}
               </td>
               <td>{% if p.health_skip_enabled %}<span class="badge-green">On</span>{% else %}<span class="badge-slate">Off</span>{% endif %}</td>
               <td class="text-right">

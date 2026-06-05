@@ -71,9 +71,15 @@ def emails_create(request: HttpRequest) -> JsonResponse:
         )
 
     # Filter suppressed recipients. If *all* recipients are suppressed,
-    # refuse the send up front rather than queueing a no-op.
-    suppressed = Suppression.filter_suppressed(
-        list(clean["to"]) + list(clean["cc"]) + list(clean["bcc"])
+    # refuse the send up front rather than queueing a no-op. Capture (test) pools
+    # skip this entirely — in test mode you want to see every send, even to
+    # addresses that are suppressed for live traffic.
+    suppressed = (
+        set()
+        if pool.is_capture
+        else Suppression.filter_suppressed(
+            list(clean["to"]) + list(clean["cc"]) + list(clean["bcc"])
+        )
     )
     if suppressed:
         kept_to = [a for a in clean["to"] if a.strip().lower() not in suppressed]
@@ -153,8 +159,14 @@ def emails_create(request: HttpRequest) -> JsonResponse:
                 transaction.set_rollback(True)
                 return JsonResponse({"id": existing.message.id}, status=200)
 
-    # Enqueue unless scheduled — schedule handling lives in v2.
-    if message.status == Message.STATUS_QUEUED:
+    if pool.is_capture:
+        # Test-mode send: store + display, never dispatch. Runs synchronously so
+        # the email lands in the Test Inbox immediately (no Q2 worker needed).
+        from apps.sending.tasks import capture_message
+
+        capture_message(message)
+    elif message.status == Message.STATUS_QUEUED:
+        # Enqueue unless scheduled — schedule handling lives in v2.
         try:
             from apps.sending.tasks import enqueue_message
 

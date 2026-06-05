@@ -174,6 +174,22 @@ def settings_view(request: HttpRequest) -> HttpResponse:
                 "Google sign-in enabled." if ws.google_oauth_enabled else "Google sign-in disabled.",
             )
             return redirect(reverse("panel:settings"))
+        if section == "updates":
+            from django_q.tasks import async_task
+
+            ws.update_check_enabled = bool(request.POST.get("update_check_enabled"))
+            ws.save(update_fields=["update_check_enabled", "updated_at"])
+            AuditLog.record(
+                request.user,
+                action="settings.update_check_toggled",
+                detail={"enabled": ws.update_check_enabled},
+            )
+            if "check_now" in request.POST and ws.update_check_enabled:
+                async_task("apps.core.updates.check_for_update")
+                messages.success(request, "Checking for updates — refresh in a moment.")
+            else:
+                messages.success(request, "Update settings saved.")
+            return redirect(f"{reverse('panel:settings')}#updates")
 
     has_google_secret = bool(ws.google_oauth_client_secret_encrypted)
     return render(

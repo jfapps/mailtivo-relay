@@ -69,7 +69,7 @@
     </div>
     {% if keys %}
       <table class="data-table">
-        <thead><tr><th>Name</th><th>Fingerprint</th><th>Scopes</th><th>Last used</th><th>Created</th><th class="text-right">Actions</th></tr></thead>
+        <thead><tr><th>Name</th><th>Fingerprint</th><th>Scopes</th><th>Pool</th><th>Last used</th><th>Created</th><th class="text-right">Actions</th></tr></thead>
         <tbody>
           {% for k in keys %}
             <tr>
@@ -79,6 +79,22 @@
               </td>
               <td><code class="code">{{ k.display_secret }}</code></td>
               <td class="text-xs text-slate-500">{{ k.scopes|join:", " }}</td>
+              <td class="text-xs text-slate-500">
+                {% if k.is_active %}
+                  <form method="post" action="{% url 'api_keys:set_pool' k.id %}" class="flex items-center gap-2">
+                    {% csrf_token %}
+                    <select name="default_pool" class="input text-xs" onchange="this.form.submit()" aria-label="Pool for {{ k.name }}">
+                      <option value="">— none —</option>
+                      {% for p in pools %}
+                        <option value="{{ p.id }}" {% if k.default_pool_id == p.id %}selected{% endif %}>{{ p.name }}{% if p.is_capture %} (capture){% endif %}</option>
+                      {% endfor %}
+                    </select>
+                    {% if k.default_pool.is_capture %}<span class="badge-green">Capture</span>{% endif %}
+                  </form>
+                {% else %}
+                  {{ k.default_pool.name|default:"—" }}{% if k.default_pool.is_capture %} <span class="badge-green">Capture</span>{% endif %}
+                {% endif %}
+              </td>
               <td class="text-xs text-slate-500">{{ k.last_used_at|default:"never"|date:"M j, H:i" }}</td>
               <td class="text-xs text-slate-500">{{ k.created_at|date:"M j, Y" }}</td>
               <td class="text-right">

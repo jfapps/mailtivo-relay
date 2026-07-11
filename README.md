@@ -1,8 +1,9 @@
 # Mailtivo-Relay
 
 > Self-hosted, MIT-licensed email relay with a **Resend-compatible HTTP API**.
-> Routes through pluggable upstream providers (v1: **Postal** + **Resend**) so
-> you can warm up, split traffic, or migrate without touching application code.
+> Routes through pluggable upstream providers (**Postal**, **Amazon SES**, and
+> **Resend**) so you can warm up, split traffic, or migrate without touching
+> application code.
 
 Built for solo builders and small teams who want one polished sending surface
 on top of any provider. Drop-in compatible with the Resend SDK — point its
@@ -14,10 +15,10 @@ on top of any provider. Drop-in compatible with the Resend SDK — point its
 ## Why
 
 - **Provider lock-in is a tax.** Mailtivo-Relay puts a stable API in front of
-  Postal and Resend so swapping (or splitting) providers is a config change,
-  not a refactor.
+  Postal, Amazon SES, and Resend so swapping (or splitting) providers is a
+  config change, not a refactor.
 - **Postal's UI is barebones.** This is the polished panel: messages timeline,
-  pools, warmup curves, suppressions, audit log.
+  test inbox, pools, warmup curves, suppressions, spam checks, and an audit log.
 - **Resend SDKs already exist in every language.** We mimic Resend's wire
   format so you don't need new client libraries.
 
@@ -43,7 +44,7 @@ Deploying for real (Coolify or any docker host)? Also set
 `worker` services run — queued mail is only dispatched by the worker.
 
 1. Onboarding: pick a workspace name + create the owner account.
-2. **Connections** → add a Resend or Postal connection. Click *Test*.
+2. **Connections** → add a Postal, Amazon SES, or Resend connection. Click *Test*.
 3. **Pools** → create a pool; attach the connection.
 4. **API Keys** → issue a key with the pool as its default.
 5. Send your first message:
@@ -117,19 +118,22 @@ handler end-to-end. Simulated events are flagged `"test": true` in the payload a
 
 - `/emails`, `/emails/:id`, `/api-keys` — Resend-compatible HTTP API
 - Bearer auth, `Idempotency-Key` (24h replay cache), 422 validation, 429 rate limit
+- **Providers** — Postal, Amazon SES, and Resend behind one API
+- **Scheduled sends** — `scheduled_at` defers dispatch (up to 30 days out)
 - **Pools** — weighted / failover / round-robin + health-aware skip, or **capture** (testing) pools
-- **Testing mode** — capture pools store sends in the Test Inbox instead of delivering (Mailpit-style)
+- **Testing mode** — capture pools store sends in the Test Inbox instead of delivering (Mailpit-style), plus a synchronous **Test Send** tool for one-off checks
 - **Warm-up curves** — SendGrid-standard (30d), aggressive (14d), or custom CSV
-- **Suppressions** — pre-send filter, auto-add on hard bounce / complaint, CSV import/export
-- **Unified events** — incoming Postal + Svix-signed Resend webhooks, dedupe on provider event id
-- **Outbound webhooks** — sign with HMAC-SHA256, exponential backoff retry
-- **Fernet-encrypted body storage** with per-workspace retention (default 30 days)
+- **Suppressions** — pre-send filter, auto-add on hard bounce / complaint (transient soft bounces excluded), CSV import/export
+- **Unified events** — incoming Postal, Amazon SES (SNS), and Svix-signed Resend webhooks, dedupe on provider event id
+- **Outbound webhooks** — HMAC-SHA256 signed, exponential-backoff retries, plus event simulation for testing your handler
+- **Spam analysis** — optional per-message AI scoring (OpenAI / Anthropic / Gemini) + Google Safe Browsing link checks
+- **Fernet-encrypted body storage** with per-workspace retention (default 30 days) and a **Data & storage** page (manual purge, purge history, storage stats)
 - **Audit log** for every admin action
 - **Custom panel** at `/app/...` — Django templates + HTMX + Tailwind + Alpine
 
 Not in v1: `/domains`, `/contacts`, `/audiences`, `/broadcasts`, multi-workspace
-tenancy, additional providers (SES / Mailgun / SendGrid / generic SMTP),
-inbound parsing.
+tenancy, additional providers (Mailgun / SendGrid / generic SMTP), inbound
+parsing.
 
 ## Architecture
 
@@ -137,18 +141,18 @@ inbound parsing.
 Customer SDK ──▶ POST /api/v1/emails ──▶ SendController
                                            │ auth + idempotency + suppression
                                            ▼
-                                       Django-Q2 worker
+                                       Django-Q2 worker  (immediate or scheduled)
                                            │
                                            ▼
                                        Pool router (weighted/failover/RR + health-skip)
                                            │
-                                  ┌────────┴────────┐
-                                  ▼                 ▼
-                            Postal adapter    Resend adapter
-                                  │                 │
-                                  └──── webhooks ───┘
+                          ┌────────────────┼────────────────┐
+                          ▼                ▼                ▼
+                    Postal adapter     SES adapter     Resend adapter
+                          │                │                │
+                          └───────────── webhooks ──────────┘
                                            ▼
-                            /webhooks/{postal,resend}/<id>/  (sig-verified)
+                        /webhooks/{postal,ses,resend}/<id>/  (sig-verified)
                                            │
                                            ▼
                                     Event + Message status
@@ -162,6 +166,7 @@ See [docs/architecture.md](docs/architecture.md) for the full breakdown.
 ## Provider setup
 
 - **[Postal](docs/providers/postal.md)** — API key, base URL, webhook public key
+- **[Amazon SES](docs/providers/ses.md)** — IAM keys, region, config set + SNS event subscription
 - **[Resend](docs/providers/resend.md)** — API key, Svix webhook secret
 
 ## API reference

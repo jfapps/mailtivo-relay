@@ -86,9 +86,20 @@ class Message(models.Model):
     last_error = models.CharField(max_length=500, blank=True)
     attempts = models.JSONField(default=list, blank=True)
 
+    # Spam analysis (see apps.spam_analysis). Latest run only — re-analysing
+    # overwrites. spam_report holds the full breakdown plus a "state" key
+    # ("running" / "done" / "error") that drives the detail-page panel.
+    spam_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    spam_verdict = models.CharField(max_length=12, blank=True)
+    spam_report = models.JSONField(default=dict, blank=True)
+    spam_analyzed_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     sent_at = models.DateTimeField(null=True, blank=True)
     retention_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Set when the retention purge cleared body_encrypted + attachments.
+    # Metadata and events are kept; only content is dropped.
+    body_purged_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     class Meta:
         ordering = ("-created_at",)
@@ -189,6 +200,39 @@ class Attachment(models.Model):
         if self.content_id:
             d["content_id"] = self.content_id
         return d
+
+
+class PurgeRun(models.Model):
+    """One execution of the retention purge — scheduled or manually triggered.
+
+    Kept as its own tiny table (rather than audit-log entries) so the
+    Data & storage page can show purge history and counts cheaply.
+    """
+
+    TRIGGER_SCHEDULED = "scheduled"
+    TRIGGER_MANUAL = "manual"
+    TRIGGER_CHOICES = [
+        (TRIGGER_SCHEDULED, "Scheduled"),
+        (TRIGGER_MANUAL, "Manual"),
+    ]
+
+    started_at = models.DateTimeField(default=timezone.now, db_index=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    trigger = models.CharField(max_length=12, choices=TRIGGER_CHOICES, default=TRIGGER_SCHEDULED)
+    # The retention cutoff this run applied (messages expiring before it were purged).
+    cutoff = models.DateTimeField(null=True, blank=True)
+    messages_purged = models.PositiveIntegerField(default=0)
+    attachments_purged = models.PositiveIntegerField(default=0)
+    idempotency_purged = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+    )
+
+    class Meta:
+        ordering = ("-started_at",)
+
+    def __str__(self) -> str:
+        return f"PurgeRun<{self.trigger} {self.started_at:%Y-%m-%d %H:%M} n={self.messages_purged}>"
 
 
 class IdempotencyRecord(models.Model):

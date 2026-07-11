@@ -1,51 +1,56 @@
 {% extends "panel/base.html" %}
 {% block title %}Pools{% endblock %}
-{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Pools</span>{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">Pools</span>{% endblock %}
 {% block topbar_actions %}
   <a href="{% url 'pools:create' %}" class="btn-primary">New pool</a>
 {% endblock %}
 {% block content %}
 <div class="space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Sending pools</h1>
-    <p class="mt-1 text-sm text-slate-500">A pool groups one or more provider connections behind a routing strategy. Assign a pool to an API key to start sending.</p>
+    <h1 class="page-title">Sending pools</h1>
+    <p class="page-subtitle">A pool groups one or more provider connections behind a routing strategy. Assign a pool to an API key to start sending.</p>
   </header>
 
   {% if pools %}
-    <section class="card">
-      <table class="data-table">
-        <thead><tr><th>Name</th><th>Strategy</th><th>Members</th><th>Health-skip</th><th class="text-right">Actions</th></tr></thead>
-        <tbody>
-          {% for p in pools %}
-            <tr>
-              <td>
-                <a href="{% url 'pools:edit' p.id %}" class="font-medium text-slate-900 hover:underline">{{ p.name }}</a>
-                {% if p.is_capture %}<span class="ml-2 badge-green">Capture</span>{% endif %}
-              </td>
-              <td>{% if p.is_capture %}<span class="text-xs text-slate-400">—</span>{% else %}<span class="badge-slate">{{ p.get_routing_strategy_display }}</span>{% endif %}</td>
-              <td class="text-xs text-slate-500">
-                {% if p.is_capture %}
-                  <span class="text-slate-400">Test Inbox</span>
-                {% else %}
-                  {% for m in p.members.all %}
-                    <span class="badge-slate">{{ m.connection.name }}<span class="ml-1 text-slate-400">w{{ m.weight }}</span></span>
-                  {% empty %}<span class="text-slate-400">— empty —</span>{% endfor %}
-                {% endif %}
-              </td>
-              <td>{% if p.health_skip_enabled %}<span class="badge-green">On</span>{% else %}<span class="badge-slate">Off</span>{% endif %}</td>
-              <td class="text-right">
-                <a href="{% url 'pools:edit' p.id %}" class="btn-ghost text-xs">Edit</a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <section class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Strategy</th><th>Members</th><th>Health-skip</th><th class="text-right">Actions</th></tr></thead>
+          <tbody>
+            {% for p in pools %}
+              <tr>
+                <td>
+                  <a href="{% url 'pools:edit' p.id %}" class="font-medium text-ink hover:text-brand-600 dark:hover:text-brand-400">{{ p.name }}</a>
+                  {% if p.is_capture %}<span class="ml-2 badge-green">Capture</span>{% endif %}
+                </td>
+                <td>{% if p.is_capture %}<span class="text-xs text-faint">—</span>{% else %}<span class="badge-slate">{{ p.get_routing_strategy_display }}</span>{% endif %}</td>
+                <td class="text-xs text-muted">
+                  {% if p.is_capture %}
+                    <span class="text-faint">Test Inbox</span>
+                  {% else %}
+                    {% for m in p.members.all %}
+                      <span class="badge-slate">{{ m.connection.name }}<span class="ml-1 font-mono text-faint tnum">w{{ m.weight }}</span></span>
+                    {% empty %}<span class="text-faint">— empty —</span>{% endfor %}
+                  {% endif %}
+                </td>
+                <td>{% if p.health_skip_enabled %}<span class="badge-green"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>On</span>{% else %}<span class="badge-slate">Off</span>{% endif %}</td>
+                <td class="whitespace-nowrap text-right">
+                  <a href="{% url 'pools:edit' p.id %}" class="btn-ghost btn-sm">Edit</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </section>
   {% else %}
     <section class="card">
-      <div class="card-body flex flex-col items-center gap-3 py-12 text-center">
-        <div class="text-sm font-medium text-slate-900">No pools yet</div>
-        <p class="max-w-md text-sm text-slate-500">Create your first pool to start routing sends through one or more provider connections.</p>
+      <div class="card-body flex flex-col items-center gap-3 py-14 text-center">
+        <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-faint">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </span>
+        <div class="text-sm font-medium text-ink">No pools yet</div>
+        <p class="max-w-md text-sm text-muted">Create your first pool to start routing sends through one or more provider connections.</p>
         <a href="{% url 'pools:create' %}" class="btn-primary">Create pool</a>
       </div>
     </section>

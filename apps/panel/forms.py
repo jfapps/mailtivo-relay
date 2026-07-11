@@ -8,7 +8,7 @@ from apps.accounts.models import WorkspaceSettings
 class WorkspaceSettingsForm(forms.ModelForm):
     class Meta:
         model = WorkspaceSettings
-        fields = ["name", "from_email_default", "retention_days"]
+        fields = ["name", "from_email_default", "retention_days", "retention_enabled"]
 
     def clean_retention_days(self) -> int:
         value = self.cleaned_data["retention_days"]

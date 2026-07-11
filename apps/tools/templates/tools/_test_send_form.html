@@ -1,7 +1,7 @@
 {# Form + result, swapped as a unit so field errors re-render on HTMX posts. #}
 <section class="card">
   <div class="card-header">
-    <h2 class="text-sm font-semibold text-slate-900">Compose</h2>
+    <h2 class="section-title">Compose</h2>
   </div>
   <form class="card-body space-y-5"
         hx-post="{% url 'tools:test_send' %}"
@@ -14,20 +14,20 @@
       <label class="label" for="{{ form.pool.id_for_label }}">Pool</label>
       {{ form.pool }}
       {% if form.pool.errors %}<div class="field-error">{{ form.pool.errors|join:" " }}</div>{% endif %}
-      <p class="mt-1 text-xs text-slate-500">{{ form.pool.help_text }}</p>
+      <p class="help">{{ form.pool.help_text }}</p>
     </div>
     <div class="grid gap-x-8 gap-y-5 sm:grid-cols-2">
       <div>
         <label class="label" for="{{ form.from_address.id_for_label }}">From</label>
         {{ form.from_address }}
         {% if form.from_address.errors %}<div class="field-error">{{ form.from_address.errors|join:" " }}</div>{% endif %}
-        <p class="mt-1 text-xs text-slate-500">{{ form.from_address.help_text }}</p>
+        <p class="help">{{ form.from_address.help_text }}</p>
       </div>
       <div>
         <label class="label" for="{{ form.to_address.id_for_label }}">To</label>
         {{ form.to_address }}
         {% if form.to_address.errors %}<div class="field-error">{{ form.to_address.errors|join:" " }}</div>{% endif %}
-        <p class="mt-1 text-xs text-slate-500">{{ form.to_address.help_text }}</p>
+        <p class="help">{{ form.to_address.help_text }}</p>
       </div>
     </div>
     <div>
@@ -39,7 +39,7 @@
       <label class="label" for="{{ form.body.id_for_label }}">Body</label>
       {{ form.body }}
       {% if form.body.errors %}<div class="field-error">{{ form.body.errors|join:" " }}</div>{% endif %}
-      <p class="mt-1 text-xs text-slate-500">{{ form.body.help_text }}</p>
+      <p class="help">{{ form.body.help_text }}</p>
     </div>
     <div class="flex justify-end">
       <button type="submit" class="btn-primary">Send test email</button>

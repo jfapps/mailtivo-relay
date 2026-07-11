@@ -1,18 +1,44 @@
 {% extends "panel/base.html" %}
 {% block title %}{% if sandbox %}Test Inbox{% else %}Messages{% endif %}{% endblock %}
-{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">{% if sandbox %}Test Inbox{% else %}Messages{% endif %}</span>{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">{% if sandbox %}Test Inbox{% else %}Messages{% endif %}</span>{% endblock %}
 {% block content %}
 <div class="space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">{% if sandbox %}Test Inbox{% else %}Messages{% endif %}</h1>
+    <h1 class="page-title">{% if sandbox %}Test Inbox{% else %}Messages{% endif %}</h1>
     {% if sandbox %}
-      <p class="mt-1 text-sm text-slate-500">Mail captured by sandbox (capture) pools — stored for inspection, never delivered. Click a row for headers, body, and the rendered HTML.</p>
+      <p class="page-subtitle">Mail captured by sandbox (capture) pools — stored for inspection, never delivered. Click a row for headers, body, and the rendered HTML.</p>
     {% else %}
-      <p class="mt-1 text-sm text-slate-500">Every send the relay has accepted. Click a row for headers, body, and the event timeline.</p>
+      <p class="page-subtitle">Every send the relay has accepted. Click a row for headers, body, and the event timeline.</p>
     {% endif %}
   </header>
 
-  <form class="card-body card flex flex-wrap items-end gap-3" hx-get="{{ list_url }}" hx-target="#messages-region" hx-trigger="change from:select, keyup changed delay:300ms from:input[name=q], submit" hx-push-url="true">
+  {% if sandbox and capture_stats %}
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="card card-body">
+        <div class="eyebrow">Total captured</div>
+        <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ capture_stats.total }}</div>
+      </div>
+      <div class="card card-body">
+        <div class="eyebrow">Last {{ capture_stats.window_hours }}h</div>
+        <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ capture_stats.last_window }}</div>
+      </div>
+      <div class="card card-body">
+        <div class="eyebrow">Hourly capture</div>
+        {% if capture_stats.sparkline_peak %}
+          <div class="mt-2 flex h-10 items-end gap-0.5">
+            {% for v in capture_stats.sparkline %}
+              {% widthratio v capture_stats.sparkline_peak 100 as pct %}
+              <div class="flex-1 rounded-t-sm bg-brand-500/70" style="height: {{ pct|default:1 }}%; min-height: 2px;" title="{{ v }}"></div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="mt-2 flex h-10 items-center text-xs text-faint">No captures in the window.</div>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  <form class="card card-body flex flex-wrap items-end gap-3" hx-get="{{ list_url }}" hx-target="#messages-region" hx-trigger="change from:select, keyup changed delay:300ms from:input[name=q], submit" hx-push-url="true">
     <div class="grow">
       <label class="label" for="id_q">Search</label>
       <input class="input" type="search" name="q" id="id_q" value="{{ q }}" placeholder="subject, from, message id…">

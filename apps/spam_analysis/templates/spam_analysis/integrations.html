@@ -1,0 +1,115 @@
+{% extends "panel/base.html" %}
+{% block title %}Integrations{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">Integrations</span>{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <header>
+    <h1 class="page-title">Integrations</h1>
+    <p class="page-subtitle">Connect an AI provider and Google Safe Browsing to power spam analysis on captured and sent messages.</p>
+  </header>
+
+  {# ---- AI provider ---- #}
+  <section class="card" x-data="{ provider: '{{ ai_provider }}' }">
+    <div class="card-header">
+      <div>
+        <h2 class="section-title">AI provider</h2>
+        <p class="text-xs text-muted">Used to analyse message content and produce a spam score.</p>
+      </div>
+      <span class="{% if ai_provider %}badge-green{% else %}badge-slate{% endif %}">
+        {% if ai_provider %}<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Configured{% else %}Not configured{% endif %}
+      </span>
+    </div>
+    <form method="post" class="card-body space-y-5" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="section" value="ai">
+      <div>
+        <label class="label" for="id_ai-provider">Provider</label>
+        <select class="input" name="ai-provider" id="id_ai-provider" x-model="provider">
+          <option value="">— None —</option>
+          {% for value, label in ai_provider_choices %}
+            <option value="{{ value }}" {% if ai_provider == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {% if ai_form.provider.errors %}<div class="field-error">{{ ai_form.provider.errors|join:" " }}</div>{% endif %}
+      </div>
+      <div x-show="provider" x-cloak class="space-y-4 border-t border-line pt-4">
+        <div>
+          <label class="label" for="id_ai-model">Model</label>
+          <input class="input font-mono text-xs" name="ai-model" id="id_ai-model"
+                 value="{{ ai_model }}"
+                 placeholder="Leave blank for the recommended default">
+          <p class="help">
+            Defaults:
+            <span class="code">{{ ai_default_models.openai }}</span> /
+            <span class="code">{{ ai_default_models.anthropic }}</span> /
+            <span class="code">{{ ai_default_models.gemini }}</span>
+          </p>
+        </div>
+        <div>
+          <label class="label" for="id_ai-api_key">API key</label>
+          <input class="input font-mono text-xs" type="password" name="ai-api_key" id="id_ai-api_key"
+                 placeholder="{% if has_ai_key %}•••••••••••• (leave blank to keep current){% else %}sk-...{% endif %}">
+          <p class="help">Stored encrypted with Fernet. Leave blank to keep the existing key.</p>
+          {% if ai_form.api_key.errors %}<div class="field-error">{{ ai_form.api_key.errors|join:" " }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <button type="button" class="btn-secondary"
+                hx-post="{% url 'integrations:ai_test' %}"
+                hx-target="#ai-test-result"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                {% if not has_ai_key %}disabled title="Save a provider and key first"{% endif %}>
+          Test connection
+        </button>
+        <button type="submit" class="btn-primary">Save AI settings</button>
+      </div>
+      <div id="ai-test-result"></div>
+    </form>
+  </section>
+
+  {# ---- Google Safe Browsing ---- #}
+  <section class="card" x-data="{ open: {{ sb_enabled|yesno:'true,false' }} }">
+    <div class="card-header">
+      <div>
+        <h2 class="section-title">Google Safe Browsing</h2>
+        <p class="text-xs text-muted">Checks every link in a message against Google's threat lists.</p>
+      </div>
+      <span class="{% if sb_enabled %}badge-green{% else %}badge-slate{% endif %}">
+        {% if sb_enabled %}<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Enabled{% else %}Disabled{% endif %}
+      </span>
+    </div>
+    <form method="post" class="card-body space-y-5" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="section" value="safe_browsing">
+      <label class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" name="sb-enabled" class="mt-1 h-4 w-4 rounded border-line-strong text-brand-600 focus:ring-brand-500"
+               {% if sb_enabled %}checked{% endif %} x-model="open">
+        <span>
+          <span class="block text-sm font-medium text-ink">Enable Safe Browsing link checks</span>
+          <span class="block text-xs text-muted">Requires a Google Cloud API key with the Safe Browsing API enabled.</span>
+        </span>
+      </label>
+      <div x-show="open" x-cloak class="space-y-4 border-t border-line pt-4">
+        <div>
+          <label class="label" for="id_sb-api_key">API key</label>
+          <input class="input font-mono text-xs" type="password" name="sb-api_key" id="id_sb-api_key"
+                 placeholder="{% if has_sb_key %}•••••••••••• (leave blank to keep current){% else %}AIza...{% endif %}">
+          <p class="help">Stored encrypted with Fernet. Leave blank to keep the existing key.</p>
+          {% if sb_form.api_key.errors %}<div class="field-error">{{ sb_form.api_key.errors|join:" " }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <button type="button" class="btn-secondary"
+                hx-post="{% url 'integrations:safe_browsing_test' %}"
+                hx-target="#sb-test-result"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                {% if not has_sb_key %}disabled title="Save an API key first"{% endif %}>
+          Test connection
+        </button>
+        <button type="submit" class="btn-primary">Save Safe Browsing settings</button>
+      </div>
+      <div id="sb-test-result"></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

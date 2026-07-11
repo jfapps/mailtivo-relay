@@ -8,9 +8,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
+import json
+
 from apps.audit.models import AuditLog
 from apps.connections.adapters import PROVIDER_LABELS, AdapterError
-from apps.core.encryption import encrypt
+from apps.core.encryption import decrypt, encrypt
 
 from .forms import ConnectionForm
 from .models import Connection
@@ -20,6 +22,34 @@ def _admin_required(view):
     return login_required(login_url="/login/")(
         user_passes_test(lambda u: u.is_authenticated and u.is_workspace_admin, login_url="/login/")(view)
     )
+
+
+def _apply_secrets(conn: Connection, form: ConnectionForm) -> None:
+    """Encrypt and store provider secrets from a validated form onto `conn`."""
+    if api_key := form.cleaned_data.get("api_key"):
+        conn.credentials_encrypted = encrypt(api_key)
+    if secret := form.cleaned_data.get("webhook_secret"):
+        conn.webhook_secret_encrypted = encrypt(secret)
+    if pem := form.cleaned_data.get("webhook_public_key_pem"):
+        conn.webhook_public_key_pem = pem
+    if conn.provider_code == Connection.PROVIDER_SES:
+        akid = form.cleaned_data.get("aws_access_key_id")
+        secret_key = form.cleaned_data.get("aws_secret_access_key")
+        if akid or secret_key:
+            existing: dict = {}
+            if conn.credentials_encrypted:
+                try:
+                    existing = json.loads(decrypt(bytes(conn.credentials_encrypted)))
+                except (ValueError, TypeError):
+                    existing = {}
+            conn.credentials_encrypted = encrypt(
+                json.dumps(
+                    {
+                        "access_key_id": akid or existing.get("access_key_id", ""),
+                        "secret_access_key": secret_key or existing.get("secret_access_key", ""),
+                    }
+                )
+            )
 
 
 @_admin_required
@@ -38,12 +68,7 @@ def create_view(request: HttpRequest) -> HttpResponse:
     form = ConnectionForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         conn: Connection = form.save(commit=False)
-        if api_key := form.cleaned_data.get("api_key"):
-            conn.credentials_encrypted = encrypt(api_key)
-        if secret := form.cleaned_data.get("webhook_secret"):
-            conn.webhook_secret_encrypted = encrypt(secret)
-        if pem := form.cleaned_data.get("webhook_public_key_pem"):
-            conn.webhook_public_key_pem = pem
+        _apply_secrets(conn, form)
         conn.created_by = request.user
         conn.save()
         AuditLog.record(
@@ -64,12 +89,7 @@ def edit_view(request: HttpRequest, pk: int) -> HttpResponse:
     form = ConnectionForm(request.POST or None, instance=conn)
     if request.method == "POST" and form.is_valid():
         conn = form.save(commit=False)
-        if api_key := form.cleaned_data.get("api_key"):
-            conn.credentials_encrypted = encrypt(api_key)
-        if secret := form.cleaned_data.get("webhook_secret"):
-            conn.webhook_secret_encrypted = encrypt(secret)
-        if pem := form.cleaned_data.get("webhook_public_key_pem"):
-            conn.webhook_public_key_pem = pem
+        _apply_secrets(conn, form)
         conn.save()
         AuditLog.record(request.user, action="connection.updated", target=conn.name)
         messages.success(request, "Connection saved.")

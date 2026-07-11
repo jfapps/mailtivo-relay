@@ -1,34 +1,100 @@
 <!doctype html>
-<html lang="en" class="h-full bg-slate-50">
+<html lang="en" class="h-full">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block title %}Mailtivo-Relay{% endblock %}</title>
   {% load static %}
+  {# Apply the saved theme before paint to avoid a flash of the wrong theme. #}
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="{% static 'css/app.css' %}" />
-  <link rel="preconnect" href="https://rsms.me/">
-  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
 </head>
-<body class="h-full">
-  <div class="grid min-h-screen place-items-center px-4 py-12">
-    <div class="w-full max-w-md">
-      <div class="mb-8 flex items-center justify-center gap-2 text-base font-semibold text-slate-900">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
+<body class="h-full bg-canvas text-ink">
+  <div class="grid min-h-screen lg:grid-cols-2">
+    {# Brand spine — constant near-black panel, dev-infra feel. Hidden on small screens. #}
+    <aside class="relative hidden flex-col justify-between overflow-hidden bg-spine p-12 text-white lg:flex">
+      {# Subtle hairline grid texture, drawn with borders only (no new colors). #}
+      <div class="pointer-events-none absolute inset-0 opacity-[0.06]"
+           style="background-image:linear-gradient(to right,#fff 1px,transparent 1px),linear-gradient(to bottom,#fff 1px,transparent 1px);background-size:44px 44px"></div>
+
+      <div class="relative flex items-center gap-2.5 text-base font-semibold text-white">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
           <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="M3 7l9 6 9-6M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l2-2h14l2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
         Mailtivo<span class="text-brand-600">·</span>Relay
       </div>
-      <div class="card">
-        <div class="card-body space-y-5">
-          {% if messages %}
-            {% for m in messages %}
-              <div class="{% if 'error' in m.tags %}alert-error{% else %}alert-success{% endif %}">{{ m }}</div>
-            {% endfor %}
-          {% endif %}
-          {% block content %}{% endblock %}
-        </div>
+
+      <div class="relative max-w-sm space-y-5">
+        <p class="text-2xl font-semibold leading-snug tracking-tight text-white">
+          Your self-hosted relay for transactional email.
+        </p>
+        <p class="text-sm leading-relaxed text-spine-text">
+          Resend-compatible API, encrypted body storage, and full delivery
+          visibility — running entirely on your own infrastructure.
+        </p>
+        <ul class="space-y-2.5 pt-2 text-sm text-spine-text">
+          <li class="flex items-center gap-2.5">
+            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-spine-line text-brand-600">
+              <svg viewBox="0 0 24 24" fill="none" class="h-3 w-3"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            Drop-in Resend API compatibility
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-spine-line text-brand-600">
+              <svg viewBox="0 0 24 24" fill="none" class="h-3 w-3"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            Encrypted message storage
+          </li>
+          <li class="flex items-center gap-2.5">
+            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-spine-line text-brand-600">
+              <svg viewBox="0 0 24 24" fill="none" class="h-3 w-3"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            Self-hosted, single-tenant control
+          </li>
+        </ul>
       </div>
-      {% block below_card %}{% endblock %}
+
+      <p class="relative text-xs text-spine-muted">© Mailtivo-Relay</p>
+    </aside>
+
+    {# Form panel — clean canvas, centered card. #}
+    <div class="flex items-center justify-center px-4 py-12 sm:px-6">
+      <div class="w-full max-w-md">
+        {# Compact wordmark for small screens where the spine is hidden. #}
+        <div class="mb-8 flex items-center justify-center gap-2 text-base font-semibold text-ink lg:hidden">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
+            <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="M3 7l9 6 9-6M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l2-2h14l2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          Mailtivo<span class="text-brand-600">·</span>Relay
+        </div>
+
+        <div class="card">
+          <div class="card-body space-y-6">
+            {% if messages %}
+              <div class="space-y-2">
+                {% for m in messages %}
+                  <div class="{% if 'error' in m.tags %}alert-error{% elif 'success' in m.tags %}alert-success{% else %}alert-info{% endif %}">{{ m }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% block content %}{% endblock %}
+          </div>
+        </div>
+        {% block below_card %}{% endblock %}
+      </div>
     </div>
   </div>
 </body>

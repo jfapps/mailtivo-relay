@@ -1,15 +1,15 @@
 {% extends "panel/base.html" %}
 {% block title %}{% if creating %}New webhook{% else %}{{ endpoint.name }}{% endif %}{% endblock %}
 {% block topbar_breadcrumb %}
-  <span class="text-slate-300">/</span><a class="text-sm text-slate-500 hover:text-slate-700" href="{% url 'webhooks_panel:list' %}">Webhooks</a>
-  <span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">{% if creating %}New{% else %}{{ endpoint.name }}{% endif %}</span>
+  <span class="text-faint">/</span><a class="text-sm text-muted hover:text-ink" href="{% url 'webhooks_panel:list' %}">Webhooks</a>
+  <span class="text-faint">/</span><span class="text-sm font-medium text-ink">{% if creating %}New{% else %}{{ endpoint.name }}{% endif %}</span>
 {% endblock %}
 {% block content %}
 <div class="space-y-6">
   <form method="post" class="card">
     {% csrf_token %}
     <div class="card-header">
-      <h2 class="text-sm font-semibold text-slate-900">{% if creating %}New webhook endpoint{% else %}Edit webhook endpoint{% endif %}</h2>
+      <h2 class="section-title">{% if creating %}New webhook endpoint{% else %}Edit webhook endpoint{% endif %}</h2>
     </div>
     <div class="card-body grid grid-cols-1 gap-4 md:grid-cols-2">
       <div class="md:col-span-2">
@@ -23,7 +23,7 @@
         {% if form.url.errors %}<div class="field-error">{{ form.url.errors|join:" " }}</div>{% endif %}
       </div>
       <div>
-        <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+        <label class="inline-flex items-center gap-2 text-sm text-ink">
           <input type="checkbox" name="enabled" {% if form.enabled.value|default_if_none:True %}checked{% endif %}> Enabled
         </label>
       </div>
@@ -31,44 +31,44 @@
         <span class="label">Event types</span>
         <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
           {% for value, label in form.event_types.field.choices %}
-            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+            <label class="inline-flex items-center gap-2 text-sm text-ink">
               <input type="checkbox" name="event_types" value="{{ value }}" {% if value in form.event_types.value %}checked{% endif %}> {{ label }}
             </label>
           {% endfor %}
         </div>
-        <p class="mt-1 text-xs text-slate-500">Leave all unchecked to receive every event type.</p>
+        <p class="help">Leave all unchecked to receive every event type.</p>
       </div>
     </div>
-    <div class="card-header bg-slate-50 justify-end gap-2">
-      <a href="{% url 'webhooks_panel:list' %}" class="btn-ghost text-xs">Cancel</a>
-      <button type="submit" class="btn-primary text-xs">{% if creating %}Create{% else %}Save{% endif %}</button>
+    <div class="card-header bg-surface-2 justify-end gap-2">
+      <a href="{% url 'webhooks_panel:list' %}" class="btn-ghost btn-sm">Cancel</a>
+      <button type="submit" class="btn-primary btn-sm">{% if creating %}Create{% else %}Save{% endif %}</button>
     </div>
   </form>
 
   {% if not creating %}
     <section class="card">
       <div class="card-header">
-        <h2 class="text-sm font-semibold text-slate-900">Signing secret</h2>
+        <h2 class="section-title">Signing secret</h2>
       </div>
       <div class="card-body space-y-3" x-data="{ copied: false }">
         <div class="flex items-center gap-2">
-          <code class="block grow rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs">{{ endpoint.signing_secret }}</code>
-          <button type="button" class="btn-secondary text-xs"
+          <code class="block grow rounded-lg border border-line bg-surface-2 px-3 py-2 font-mono text-xs">{{ endpoint.signing_secret }}</code>
+          <button type="button" class="btn-secondary btn-sm"
                   x-on:click="navigator.clipboard.writeText('{{ endpoint.signing_secret }}'); copied = true; setTimeout(() => copied = false, 1500)">
             <span x-show="!copied">Copy</span><span x-show="copied" x-cloak>Copied</span>
           </button>
         </div>
-        <p class="text-xs text-slate-500">Each delivery includes <span class="code">Mailtivo-Signature: t=&lt;unix&gt;,v1=&lt;hex&gt;</span>. The signed payload is <span class="code">{t}.{body}</span> hashed with HMAC-SHA256 using the part of the secret after <span class="code">whsec_</span>.</p>
+        <p class="text-xs text-muted">Each delivery includes <span class="code">Mailtivo-Signature: t=&lt;unix&gt;,v1=&lt;hex&gt;</span>. The signed payload is <span class="code">{t}.{body}</span> hashed with HMAC-SHA256 using the part of the secret after <span class="code">whsec_</span>.</p>
         <form method="post" action="{% url 'webhooks_panel:rotate' endpoint.id %}" onsubmit="return confirm('Rotate the signing secret? Apps using the old one will reject deliveries.');">
           {% csrf_token %}
-          <button type="submit" class="btn-secondary text-xs">Rotate secret</button>
+          <button type="submit" class="btn-secondary btn-sm">Rotate secret</button>
         </form>
       </div>
     </section>
 
     <form method="post" action="{% url 'webhooks_panel:delete' endpoint.id %}" onsubmit="return confirm('Delete this webhook endpoint?');">
       {% csrf_token %}
-      <button type="submit" class="btn-ghost text-xs text-red-600 hover:bg-red-50">Delete webhook</button>
+      <button type="submit" class="btn-ghost btn-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10">Delete webhook</button>
     </form>
   {% endif %}
 </div>

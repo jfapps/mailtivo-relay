@@ -1,0 +1,7 @@
+<button type="button" class="btn-primary"
+        hx-post="{% url 'messages_panel:analyze' message.id %}"
+        hx-target="#spam-panel"
+        hx-swap="outerHTML"
+        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  {{ label|default:"Analyze" }}
+</button>

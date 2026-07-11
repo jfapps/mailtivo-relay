@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 
+import requests
 from django.db import IntegrityError, transaction
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -19,6 +20,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from apps.connections.adapters import AdapterError
+from apps.connections.adapters.ses import is_sns_url
 from apps.connections.models import Connection
 from apps.events.models import Event
 from apps.events.outbound import fan_out
@@ -145,7 +147,13 @@ def _ingest(request: HttpRequest, connection: Connection) -> JsonResponse:
             _apply_status(message, _STATUS_FOR_EVENT.get(normalized.type))
 
         # Auto-suppress on hard bounce / complaint, using the event recipient.
+        # Soft (transient) bounces — mailbox full, greylisting, out-of-office
+        # auto-replies — are delivery hiccups, not dead addresses; suppressing
+        # them would permanently block legitimate recipients. Unknown-class
+        # bounces still suppress (the safe default for deliverability).
         reason = _AUTO_SUPPRESS_REASON.get(normalized.type)
+        if normalized.type == "bounced" and normalized.bounce_class == "soft":
+            reason = None
         if reason and normalized.recipient:
             Suppression.add(
                 normalized.recipient,
@@ -173,6 +181,62 @@ def postal_webhook(request: HttpRequest, connection_id: int) -> JsonResponse:
 @require_http_methods(["POST"])
 def resend_webhook(request: HttpRequest, connection_id: int) -> JsonResponse:
     connection = get_object_or_404(Connection, pk=connection_id, provider_code=Connection.PROVIDER_RESEND)
+    return _ingest(request, connection)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def ses_webhook(request: HttpRequest, connection_id: int) -> JsonResponse:
+    """SNS HTTPS endpoint for an SES connection.
+
+    SES publishes events to an SNS topic; SNS delivers them here as one of three
+    message types (header `x-amz-sns-message-type`). We verify the SNS signature
+    for *every* type first — including confirmations — so an attacker cannot forge
+    a SubscribeURL we'd then auto-GET. Confirmations are handled here; real
+    Notifications fall through to the shared `_ingest` pipeline.
+    """
+    connection = get_object_or_404(Connection, pk=connection_id, provider_code=Connection.PROVIDER_SES)
+    body = request.body or b""
+    if not body:
+        return _error("Empty body.", status=400)
+
+    adapter = connection.adapter()
+    try:
+        if not adapter.verify_webhook(headers=request.headers, body=body):
+            return _error("Invalid SNS signature.", status=401)
+    except AdapterError as exc:
+        return _error(f"Adapter configuration error: {exc}", status=500)
+
+    try:
+        payload = json.loads(body)
+    except ValueError:
+        return _error("Malformed SNS payload.", status=400)
+    topic_arn = str(payload.get("TopicArn") or "")
+
+    # Topic pinning: a valid SNS signature only proves the message came from
+    # AWS SNS — not from *our* topic. Anyone can subscribe this URL to their
+    # own topic and publish SES-shaped events, so once a topic is pinned
+    # (explicitly or via first confirmed subscription), all others are rejected.
+    if connection.sns_topic_arn and topic_arn != connection.sns_topic_arn:
+        return _error("SNS topic does not match this connection.", status=403)
+
+    msg_type = request.headers.get("x-amz-sns-message-type", "")
+    if msg_type in ("SubscriptionConfirmation", "UnsubscribeConfirmation"):
+        subscribe_url = payload.get("SubscribeURL", "")
+        if not subscribe_url:
+            return _error("Malformed SNS confirmation.", status=400)
+        # SubscribeURL is a separate URL we actively GET — guard its host too.
+        if not is_sns_url(subscribe_url):
+            return _error("Untrusted SubscribeURL host.", status=400)
+        try:
+            requests.get(subscribe_url, timeout=10)
+        except requests.RequestException as exc:
+            return _error(f"Could not confirm subscription: {exc}", status=502)
+        if msg_type == "SubscriptionConfirmation" and topic_arn and not connection.sns_topic_arn:
+            # First confirmed subscription pins the topic for this connection.
+            Connection.objects.filter(pk=connection.pk).update(sns_topic_arn=topic_arn)
+        return JsonResponse({"ok": True, "confirmed": True}, status=200)
+
     return _ingest(request, connection)
 
 

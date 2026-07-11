@@ -32,6 +32,36 @@ def test_dashboard_renders(admin_client):
 
 
 @pytest.mark.django_db
+def test_kpis_exclude_sandbox():
+    # Captured (sandbox) mail must not pollute production deliverability KPIs:
+    # it has no real delivery lifecycle, so it would distort totals + rates.
+    from apps.messages_api.models import Message
+    from apps.panel.views import _kpi_data
+
+    for sandbox, status, subject in [
+        (False, Message.STATUS_DELIVERED, "live"),
+        (True, Message.STATUS_CAPTURED, "captured"),
+    ]:
+        m = Message(from_address="a@x.test", to=["b@y.test"], subject=subject, sandbox=sandbox, status=status)
+        m.set_body(html="<p>x</p>", text="x")
+        m.save()
+
+    data = _kpi_data()
+    assert data["total"] == 1  # only the live message is counted
+    assert data["delivered"] == 1
+
+
+@pytest.mark.django_db
+def test_topbar_actions_block_renders(admin_client):
+    # Regression: the topbar was once {% include %}d, which silently dropped child
+    # templates' {% block topbar_actions %} overrides (block overrides only flow
+    # through {% extends %}). The "New pool" action button must appear in the topbar.
+    r = admin_client.get(reverse("pools:list"))
+    assert r.status_code == 200
+    assert b"New pool" in r.content
+
+
+@pytest.mark.django_db
 def test_settings_save_general(admin_client):
     r = admin_client.post(
         reverse("panel:settings"),

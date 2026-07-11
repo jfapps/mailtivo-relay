@@ -44,8 +44,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      # service_healthy (not service_started): web only turns healthy after its
+      # migrate finished, so exactly one process ever runs migrations.
       web:
-        condition: service_started
+        condition: service_healthy
     env_file:
       - .env
     environment:

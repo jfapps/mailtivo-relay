@@ -75,6 +75,11 @@ def send_message(message_id: str) -> str:
         message.save(update_fields=["status", "last_error"])
         return message.status
 
+    if pool.is_capture:
+        # The pool flipped to capture (test) mode between accept and dispatch —
+        # e.g. a scheduled send whose pool was switched. Capture, never dispatch.
+        return capture_message(message)
+
     Message.objects.filter(pk=message.pk).update(status=Message.STATUS_SENDING)
     message.status = Message.STATUS_SENDING
 

@@ -269,6 +269,10 @@ class PostalAdapter(BaseAdapter):
             ev.recipient = to if isinstance(to, str) else (to[0] if to else "")
         if ev.type == "bounced":
             ev.bounce_reason = payload.get("details") or payload.get("output") or ""
+            # Postal's MessageBounced payload carries no hard/soft indicator
+            # (verified 2026-07-11: {original_message, bounce} only), so the
+            # class stays "unknown" and the ingest path suppresses — Postal only
+            # emits MessageBounced for genuine bounce messages it received.
         elif ev.type == "clicked":
             ev.link_url = payload.get("url", "")
             ev.user_agent = payload.get("user_agent", "")

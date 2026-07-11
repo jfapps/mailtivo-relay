@@ -10,15 +10,18 @@ from .base import (
 )
 from .postal import PostalAdapter
 from .resend import ResendAdapter
+from .ses import SesAdapter
 
 PROVIDERS: dict[str, type[BaseAdapter]] = {
     "postal": PostalAdapter,
     "resend": ResendAdapter,
+    "ses": SesAdapter,
 }
 
 PROVIDER_LABELS: dict[str, str] = {
     "postal": "Postal",
     "resend": "Resend",
+    "ses": "Amazon SES",
 }
 
 
@@ -38,6 +41,7 @@ __all__ = [
     "TEMPORARY_FAILURE",
     "PostalAdapter",
     "ResendAdapter",
+    "SesAdapter",
     "PROVIDERS",
     "PROVIDER_LABELS",
     "get_adapter_class",

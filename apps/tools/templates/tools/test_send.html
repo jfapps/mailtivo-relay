@@ -1,11 +1,11 @@
 {% extends "panel/base.html" %}
 {% block title %}Test send{% endblock %}
-{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><a href="{% url 'tools:index' %}" class="text-sm font-medium text-slate-500 hover:text-slate-700">Tools</a><span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Test send</span>{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><a href="{% url 'tools:index' %}" class="text-sm font-medium text-muted hover:text-ink">Tools</a><span class="text-faint">/</span><span class="text-sm font-medium text-ink">Test send</span>{% endblock %}
 {% block content %}
 <div class="space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Test send</h1>
-    <p class="mt-1 text-sm text-slate-500">Route a one-off email through a pool and see the result immediately. Recorded in Messages like any other send.</p>
+    <h1 class="page-title">Test send</h1>
+    <p class="page-subtitle">Route a one-off email through a pool and see the result immediately. Recorded in Messages like any other send.</p>
   </header>
 
   {% if not has_pool %}

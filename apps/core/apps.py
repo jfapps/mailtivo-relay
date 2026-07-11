@@ -15,11 +15,11 @@ class CoreConfig(AppConfig):
         # No sender filter: apps.core has no models module, so a sender=self
         # filter would never fire. get_or_create below is idempotent, so running
         # once per migrated app is harmless.
-        post_migrate.connect(_ensure_update_check_schedule)
+        post_migrate.connect(_ensure_builtin_schedules)
 
 
-def _ensure_update_check_schedule(**_kwargs) -> None:
-    """Idempotently register the daily update check on django-q.
+def _ensure_builtin_schedules(**_kwargs) -> None:
+    """Idempotently register the built-in daily django-q schedules.
 
     Runs after each migrate (the container entrypoint migrates on every deploy).
     Best-effort: the Schedule table may not exist yet on a first-ever migrate.
@@ -34,5 +34,12 @@ def _ensure_update_check_schedule(**_kwargs) -> None:
                 "schedule_type": Schedule.DAILY,
             },
         )
+        Schedule.objects.get_or_create(
+            name="mailtivo-retention-purge",
+            defaults={
+                "func": "apps.messages_api.tasks.purge_expired",
+                "schedule_type": Schedule.DAILY,
+            },
+        )
     except Exception as exc:  # noqa: BLE001 — schedule registration is best-effort
-        log.debug("update-check schedule not registered: %s", exc)
+        log.debug("builtin schedules not registered: %s", exc)

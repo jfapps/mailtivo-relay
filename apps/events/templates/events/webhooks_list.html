@@ -1,40 +1,50 @@
 {% extends "panel/base.html" %}
 {% block title %}Webhook endpoints{% endblock %}
-{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Webhooks</span>{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">Webhooks</span>{% endblock %}
 {% block topbar_actions %}<a href="{% url 'webhooks_panel:create' %}" class="btn-primary">New webhook</a>{% endblock %}
 {% block content %}
 <div class="space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Outbound webhooks</h1>
-    <p class="mt-1 text-sm text-slate-500">Mailtivo-Relay forwards normalized events to these URLs. Each delivery is HMAC-SHA256 signed and retried with exponential backoff.</p>
+    <h1 class="page-title">Outbound webhooks</h1>
+    <p class="page-subtitle">Mailtivo-Relay forwards normalized events to these URLs. Each delivery is HMAC-SHA256 signed and retried with exponential backoff.</p>
   </header>
 
   {% if endpoints %}
-    <section class="card">
-      <table class="data-table">
-        <thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Last delivered</th><th>Failures</th><th class="text-right">Actions</th></tr></thead>
-        <tbody>
-          {% for e in endpoints %}
-            <tr>
-              <td>
-                <a href="{% url 'webhooks_panel:edit' e.id %}" class="font-medium text-slate-900 hover:underline">{{ e.name }}</a>
-                {% if not e.enabled %}<span class="badge-slate ml-2">Disabled</span>{% endif %}
-              </td>
-              <td class="text-xs text-slate-500">{{ e.url|truncatechars:50 }}</td>
-              <td class="text-xs text-slate-500">{% if e.event_types %}{{ e.event_types|join:", " }}{% else %}all{% endif %}</td>
-              <td class="text-xs text-slate-500">{{ e.last_succeeded_at|default:"never"|date:"M j, H:i" }}</td>
-              <td class="text-xs {% if e.consecutive_failures %}text-red-600{% else %}text-slate-500{% endif %}">{{ e.consecutive_failures }}</td>
-              <td class="text-right"><a href="{% url 'webhooks_panel:edit' e.id %}" class="btn-ghost text-xs">Edit</a></td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <section class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Last delivered</th><th>Failures</th><th class="text-right">Actions</th></tr></thead>
+          <tbody>
+            {% for e in endpoints %}
+              <tr>
+                <td>
+                  <a href="{% url 'webhooks_panel:edit' e.id %}" class="font-medium text-ink hover:underline">{{ e.name }}</a>
+                  {% if e.enabled %}
+                    <span class="badge-green ml-2"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Enabled</span>
+                  {% else %}
+                    <span class="badge-slate ml-2">Disabled</span>
+                  {% endif %}
+                </td>
+                <td class="font-mono text-xs text-muted">{{ e.url|truncatechars:50 }}</td>
+                <td class="text-xs text-muted">{% if e.event_types %}{{ e.event_types|join:", " }}{% else %}all{% endif %}</td>
+                <td class="whitespace-nowrap font-mono text-xs text-muted tnum">{{ e.last_succeeded_at|default:"never"|date:"M j, H:i" }}</td>
+                <td class="font-mono text-xs tnum {% if e.consecutive_failures %}text-red-600 dark:text-red-400{% else %}text-muted{% endif %}">{{ e.consecutive_failures }}</td>
+                <td class="whitespace-nowrap text-right"><a href="{% url 'webhooks_panel:edit' e.id %}" class="btn-ghost btn-sm">Edit</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </section>
   {% else %}
     <section class="card">
-      <div class="card-body py-12 text-center">
-        <p class="text-sm text-slate-500">No webhook endpoints configured. Add one to receive event notifications.</p>
-        <a href="{% url 'webhooks_panel:create' %}" class="btn-primary mt-3">New webhook</a>
+      <div class="card-body py-14 text-center">
+        <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-faint">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        </span>
+        <p class="mt-3 text-sm font-medium text-ink">No webhook endpoints configured</p>
+        <p class="mt-1 text-sm text-muted">Add one to receive event notifications at your own URLs.</p>
+        <a href="{% url 'webhooks_panel:create' %}" class="btn-primary mt-4">New webhook</a>
       </div>
     </section>
   {% endif %}

@@ -1,54 +1,59 @@
 {% extends "panel/base.html" %}
 {% block title %}Connections{% endblock %}
-{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Connections</span>{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">Connections</span>{% endblock %}
 {% block topbar_actions %}
   <a href="{% url 'connections:create' %}" class="btn-primary">Add connection</a>
 {% endblock %}
 {% block content %}
 <div class="space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Provider connections</h1>
-    <p class="mt-1 text-sm text-slate-500">Connect Postal and Resend accounts here, then group them into Pools.</p>
+    <h1 class="page-title">Provider connections</h1>
+    <p class="page-subtitle">Connect Postal and Resend accounts here, then group them into Pools.</p>
   </header>
 
   {% if connections %}
-    <section class="card">
-      <table class="data-table">
-        <thead><tr><th>Name</th><th>Provider</th><th>Status</th><th>Last checked</th><th>Daily cap</th><th class="text-right">Actions</th></tr></thead>
-        <tbody>
-          {% for c in connections %}
-            <tr>
-              <td>
-                <a href="{% url 'connections:edit' c.id %}" class="font-medium text-slate-900 hover:underline">{{ c.name }}</a>
-                {% if not c.enabled %}<span class="badge-slate ml-2">Disabled</span>{% endif %}
-                {% if c.base_url %}<div class="text-xs text-slate-500">{{ c.base_url }}</div>{% endif %}
-              </td>
-              <td><span class="badge-slate">{{ c.get_provider_code_display }}</span></td>
-              <td>
-                {% if c.status == 'healthy' %}<span class="badge-green">Healthy</span>
-                {% elif c.status == 'degraded' %}<span class="badge-yellow">Degraded</span>
-                {% elif c.status == 'down' %}<span class="badge-red">Down</span>
-                {% else %}<span class="badge-slate">Untested</span>{% endif %}
-              </td>
-              <td class="text-xs text-slate-500">{{ c.last_health_check_at|default:"—"|date:"M j, H:i" }}</td>
-              <td class="text-xs text-slate-500">{% if c.daily_cap %}{{ c.daily_cap }}{% else %}—{% endif %}</td>
-              <td class="text-right">
-                <form method="post" action="{% url 'connections:test' c.id %}" class="inline">
-                  {% csrf_token %}
-                  <button type="submit" class="btn-ghost text-xs">Test</button>
-                </form>
-                <a href="{% url 'connections:edit' c.id %}" class="btn-ghost text-xs">Edit</a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <section class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Provider</th><th>Status</th><th>Last checked</th><th>Daily cap</th><th class="text-right">Actions</th></tr></thead>
+          <tbody>
+            {% for c in connections %}
+              <tr>
+                <td>
+                  <a href="{% url 'connections:edit' c.id %}" class="font-medium text-ink hover:text-brand-600 dark:hover:text-brand-400">{{ c.name }}</a>
+                  {% if not c.enabled %}<span class="badge-slate ml-2">Disabled</span>{% endif %}
+                  {% if c.base_url %}<div class="font-mono text-xs text-faint">{{ c.base_url }}</div>{% endif %}
+                </td>
+                <td><span class="badge-slate">{{ c.get_provider_code_display }}</span></td>
+                <td>
+                  {% if c.status == 'healthy' %}<span class="badge-green"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Healthy</span>
+                  {% elif c.status == 'degraded' %}<span class="badge-yellow"><span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>Degraded</span>
+                  {% elif c.status == 'down' %}<span class="badge-red"><span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>Down</span>
+                  {% else %}<span class="badge-slate">Untested</span>{% endif %}
+                </td>
+                <td class="whitespace-nowrap font-mono text-xs text-muted tnum">{{ c.last_health_check_at|default:"—"|date:"M j, H:i" }}</td>
+                <td class="font-mono text-xs text-muted tnum">{% if c.daily_cap %}{{ c.daily_cap }}{% else %}—{% endif %}</td>
+                <td class="whitespace-nowrap text-right">
+                  <form method="post" action="{% url 'connections:test' c.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-ghost btn-sm">Test</button>
+                  </form>
+                  <a href="{% url 'connections:edit' c.id %}" class="btn-ghost btn-sm">Edit</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </section>
   {% else %}
     <section class="card">
-      <div class="card-body flex flex-col items-center gap-3 py-12 text-center">
-        <div class="text-sm font-medium text-slate-900">No connections yet</div>
-        <p class="max-w-md text-sm text-slate-500">Add your first Postal or Resend account to start routing mail through Mailtivo-Relay.</p>
+      <div class="card-body flex flex-col items-center gap-3 py-14 text-center">
+        <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-faint">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M9 5h6m-6 14h6M5 9v6m14-6v6M7 7h10v10H7z" stroke="currentColor" stroke-width="1.8"/></svg>
+        </span>
+        <div class="text-sm font-medium text-ink">No connections yet</div>
+        <p class="max-w-md text-sm text-muted">Add your first Postal or Resend account to start routing mail through Mailtivo-Relay.</p>
         <a href="{% url 'connections:create' %}" class="btn-primary">Add connection</a>
       </div>
     </section>

@@ -17,7 +17,7 @@ from django.contrib.sites.models import Site
 from apps.accounts.models import Invitation, User, WorkspaceSettings
 from apps.audit.models import AuditLog
 from apps.core.encryption import decrypt, encrypt
-from apps.messages_api.models import Message
+from apps.messages_api.models import Attachment, IdempotencyRecord, Message, PurgeRun
 
 from .forms import GoogleOAuthForm, InvitationForm, WorkspaceSettingsForm
 
@@ -53,8 +53,11 @@ def _sync_google_social_app(ws: WorkspaceSettings) -> None:
 
 
 def _kpi_data(window_hours: int = 24) -> dict:
+    # Production deliverability only — sandbox (captured) mail has no real delivery
+    # lifecycle, so including it would distort delivery/bounce rates and volume.
+    # Capture-pool stats live on the Test Inbox instead (see messages_api.panel_views).
     since = timezone.now() - timedelta(hours=window_hours)
-    qs = Message.objects.filter(created_at__gte=since)
+    qs = Message.objects.filter(created_at__gte=since, sandbox=False)
     counts: dict[str, int] = {
         row["status"]: row["n"] for row in qs.values("status").annotate(n=Count("id"))
     }
@@ -79,6 +82,7 @@ def _kpi_data(window_hours: int = 24) -> dict:
         n = Message.objects.filter(
             created_at__gte=hour_start,
             created_at__lt=hour_end,
+            sandbox=False,
             status__in=[
                 Message.STATUS_SENT, Message.STATUS_DELIVERED,
                 Message.STATUS_BOUNCED, Message.STATUS_COMPLAINED,
@@ -201,6 +205,103 @@ def settings_view(request: HttpRequest) -> HttpResponse:
             "has_google_secret": has_google_secret,
         },
     )
+
+
+@_admin_required
+@require_http_methods(["GET"])
+def data_view(request: HttpRequest) -> HttpResponse:
+    """Data & storage: what the relay is holding, retention state, purge history."""
+    from django.db.models import Sum
+    from django.db.models.functions import Length
+
+    from apps.events.models import Event
+    from apps.messages_api.tasks import _IN_FLIGHT_STATUSES
+
+    now = timezone.now()
+    ws = WorkspaceSettings.load()
+
+    att = Attachment.objects.aggregate(n=Count("id"), b64_chars=Sum(Length("content_b64")))
+    # content_b64 is base64 text; decoded payload is ~3/4 of its length.
+    attachment_bytes = int((att["b64_chars"] or 0) * 3 / 4)
+
+    stats = {
+        "total_messages": Message.objects.count(),
+        "bodies_stored": Message.objects.filter(body_purged_at__isnull=True).count(),
+        "bodies_purged": Message.objects.filter(body_purged_at__isnull=False).count(),
+        "pending_purge": (
+            Message.objects.filter(retention_expires_at__lt=now, body_purged_at__isnull=True)
+            .exclude(status__in=_IN_FLIGHT_STATUSES)
+            .count()
+        ),
+        "captured": Message.objects.filter(sandbox=True).count(),
+        "attachments": att["n"] or 0,
+        "attachment_bytes": attachment_bytes,
+        "events": Event.objects.count(),
+        "idempotency_records": IdempotencyRecord.objects.count(),
+        "oldest_message_at": (
+            Message.objects.order_by("created_at").values_list("created_at", flat=True).first()
+        ),
+    }
+    return render(
+        request,
+        "panel/data.html",
+        {
+            "stats": stats,
+            "runs": PurgeRun.objects.select_related("created_by")[:10],
+            "retention_enabled": ws.retention_enabled,
+            "retention_days": ws.retention_days,
+        },
+    )
+
+
+@_admin_required
+@require_http_methods(["POST"])
+def data_purge_now(request: HttpRequest) -> HttpResponse:
+    from apps.messages_api.tasks import purge_expired
+
+    result = purge_expired(trigger=PurgeRun.TRIGGER_MANUAL, user_id=request.user.pk)
+    AuditLog.record(request.user, action="data.purge_run", detail=result)
+    messages.success(
+        request,
+        f"Purged {result['messages_purged']} message bodies and "
+        f"{result['attachments_purged']} attachments.",
+    )
+    return redirect(reverse("panel:data"))
+
+
+@_admin_required
+@require_http_methods(["POST"])
+def data_purge_older(request: HttpRequest) -> HttpResponse:
+    from apps.messages_api.tasks import purge_expired
+
+    try:
+        days = int(request.POST.get("days", ""))
+    except ValueError:
+        days = -1
+    if days < 1 or days > 3650:
+        messages.error(request, "Enter a number of days between 1 and 3650.")
+        return redirect(reverse("panel:data"))
+
+    result = purge_expired(
+        trigger=PurgeRun.TRIGGER_MANUAL, older_than_days=days, user_id=request.user.pk,
+    )
+    AuditLog.record(request.user, action="data.purge_older_than", detail={"days": days, **result})
+    messages.success(
+        request,
+        f"Purged {result['messages_purged']} message bodies older than {days} days.",
+    )
+    return redirect(reverse("panel:data"))
+
+
+@_admin_required
+@require_http_methods(["POST"])
+def data_delete_captured(request: HttpRequest) -> HttpResponse:
+    from apps.messages_api.tasks import delete_captured_messages
+
+    n = delete_captured_messages()
+    AuditLog.record(request.user, action="data.captured_deleted", detail={"count": n})
+    messages.success(request, f"Deleted {n} captured test message{'s' if n != 1 else ''}.")
+    return redirect(reverse("panel:data"))
 
 
 @_admin_required

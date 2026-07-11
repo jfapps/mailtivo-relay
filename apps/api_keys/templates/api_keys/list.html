@@ -1,38 +1,38 @@
 {% extends "panel/base.html" %}
 {% block title %}API Keys{% endblock %}
-{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">API Keys</span>{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">API Keys</span>{% endblock %}
 {% block content %}
 <div class="space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">API keys</h1>
-    <p class="mt-1 text-sm text-slate-500">Use these with the Resend SDK against <span class="code">{{ request.scheme }}://{{ request.get_host }}/api/v1</span>.</p>
+    <h1 class="page-title">API keys</h1>
+    <p class="page-subtitle">Use these with the Resend SDK against <span class="code">{{ request.scheme }}://{{ request.get_host }}/api/v1</span>.</p>
   </header>
 
   {% if issued_secret %}
-    <section class="card border-emerald-200">
-      <div class="card-header bg-emerald-50">
+    <section class="card overflow-hidden border-emerald-200 dark:border-emerald-500/30">
+      <div class="card-header bg-emerald-50 dark:bg-emerald-500/10">
         <div>
-          <h2 class="text-sm font-semibold text-emerald-900">New API key issued</h2>
-          <p class="text-xs text-emerald-800">Copy it now — it will not be shown again.</p>
+          <h2 class="section-title text-emerald-900 dark:text-emerald-300">New API key issued</h2>
+          <p class="text-xs text-emerald-800 dark:text-emerald-400">Copy it now — it will not be shown again.</p>
         </div>
       </div>
       <div class="card-body" x-data="{ copied: false }">
         <div class="flex items-center gap-2">
-          <code class="block grow rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs">{{ issued_secret }}</code>
-          <button type="button" class="btn-secondary text-xs"
+          <code class="block grow rounded-lg border border-line bg-surface-2 px-3 py-2 font-mono text-xs tnum">{{ issued_secret }}</code>
+          <button type="button" class="btn-secondary btn-sm shrink-0"
                   x-on:click="navigator.clipboard.writeText('{{ issued_secret }}'); copied = true; setTimeout(() => copied = false, 1500)">
             <span x-show="!copied">Copy</span>
             <span x-show="copied" x-cloak>Copied</span>
           </button>
         </div>
-        <p class="mt-3 text-xs text-slate-500">Name: <span class="font-medium text-slate-900">{{ issued_key.name }}</span> · Scopes: {{ issued_key.scopes|join:", " }}</p>
+        <p class="mt-3 text-xs text-muted">Name: <span class="font-medium text-ink">{{ issued_key.name }}</span> · Scopes: {{ issued_key.scopes|join:", " }}</p>
       </div>
     </section>
   {% endif %}
 
   <section class="card">
     <div class="card-header">
-      <h2 class="text-sm font-semibold text-slate-900">Issue a new key</h2>
+      <h2 class="section-title">Issue a new key</h2>
     </div>
     <form method="post" class="card-body grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr_1.5fr_auto] md:items-end" novalidate>
       {% csrf_token %}
@@ -62,55 +62,63 @@
     </form>
   </section>
 
-  <section class="card">
+  <section class="card overflow-hidden">
     <div class="card-header">
-      <h2 class="text-sm font-semibold text-slate-900">All keys</h2>
-      <span class="text-xs text-slate-500">{{ keys|length }}</span>
+      <h2 class="section-title">All keys</h2>
+      <span class="text-xs text-muted tnum">{{ keys|length }}</span>
     </div>
     {% if keys %}
-      <table class="data-table">
-        <thead><tr><th>Name</th><th>Fingerprint</th><th>Scopes</th><th>Pool</th><th>Last used</th><th>Created</th><th class="text-right">Actions</th></tr></thead>
-        <tbody>
-          {% for k in keys %}
-            <tr>
-              <td>
-                <span class="font-medium text-slate-900">{{ k.name }}</span>
-                {% if k.revoked_at %}<span class="badge-red ml-2">Revoked</span>{% endif %}
-              </td>
-              <td><code class="code">{{ k.display_secret }}</code></td>
-              <td class="text-xs text-slate-500">{{ k.scopes|join:", " }}</td>
-              <td class="text-xs text-slate-500">
-                {% if k.is_active %}
-                  <form method="post" action="{% url 'api_keys:set_pool' k.id %}" class="flex items-center gap-2">
-                    {% csrf_token %}
-                    <select name="default_pool" class="input text-xs" onchange="this.form.submit()" aria-label="Pool for {{ k.name }}">
-                      <option value="">— none —</option>
-                      {% for p in pools %}
-                        <option value="{{ p.id }}" {% if k.default_pool_id == p.id %}selected{% endif %}>{{ p.name }}{% if p.is_capture %} (capture){% endif %}</option>
-                      {% endfor %}
-                    </select>
-                    {% if k.default_pool.is_capture %}<span class="badge-green">Capture</span>{% endif %}
-                  </form>
-                {% else %}
-                  {{ k.default_pool.name|default:"—" }}{% if k.default_pool.is_capture %} <span class="badge-green">Capture</span>{% endif %}
-                {% endif %}
-              </td>
-              <td class="text-xs text-slate-500">{{ k.last_used_at|default:"never"|date:"M j, H:i" }}</td>
-              <td class="text-xs text-slate-500">{{ k.created_at|date:"M j, Y" }}</td>
-              <td class="text-right">
-                {% if k.is_active %}
-                  <form method="post" action="{% url 'api_keys:revoke' k.id %}" class="inline" onsubmit="return confirm('Revoke this key? Apps using it will start receiving 401.');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-ghost text-xs text-red-600 hover:bg-red-50">Revoke</button>
-                  </form>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Fingerprint</th><th>Scopes</th><th>Pool</th><th>Last used</th><th>Created</th><th class="text-right">Actions</th></tr></thead>
+          <tbody>
+            {% for k in keys %}
+              <tr>
+                <td>
+                  <span class="font-medium text-ink">{{ k.name }}</span>
+                  {% if k.revoked_at %}<span class="badge-red ml-2">Revoked</span>{% endif %}
+                </td>
+                <td class="whitespace-nowrap"><code class="code font-mono text-xs tnum">{{ k.display_secret }}</code></td>
+                <td class="text-xs text-muted">{{ k.scopes|join:", " }}</td>
+                <td class="text-xs text-muted">
+                  {% if k.is_active %}
+                    <form method="post" action="{% url 'api_keys:set_pool' k.id %}" class="flex items-center gap-2">
+                      {% csrf_token %}
+                      <select name="default_pool" class="input text-xs" onchange="this.form.submit()" aria-label="Pool for {{ k.name }}">
+                        <option value="">— none —</option>
+                        {% for p in pools %}
+                          <option value="{{ p.id }}" {% if k.default_pool_id == p.id %}selected{% endif %}>{{ p.name }}{% if p.is_capture %} (capture){% endif %}</option>
+                        {% endfor %}
+                      </select>
+                      {% if k.default_pool.is_capture %}<span class="badge-green">Capture</span>{% endif %}
+                    </form>
+                  {% else %}
+                    {{ k.default_pool.name|default:"—" }}{% if k.default_pool.is_capture %} <span class="badge-green">Capture</span>{% endif %}
+                  {% endif %}
+                </td>
+                <td class="whitespace-nowrap font-mono text-xs text-muted tnum">{{ k.last_used_at|default:"never"|date:"M j, H:i" }}</td>
+                <td class="whitespace-nowrap font-mono text-xs text-muted tnum">{{ k.created_at|date:"M j, Y" }}</td>
+                <td class="whitespace-nowrap text-right">
+                  {% if k.is_active %}
+                    <form method="post" action="{% url 'api_keys:revoke' k.id %}" class="inline" onsubmit="return confirm('Revoke this key? Apps using it will start receiving 401.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-ghost btn-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10">Revoke</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     {% else %}
-      <div class="card-body py-12 text-center text-sm text-slate-500">No API keys yet.</div>
+      <div class="card-body flex flex-col items-center gap-3 py-14 text-center">
+        <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-faint">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 11-8 0 4 4 0 018 0zm-4 4v3m0 0H9m2 0h2m-2 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div class="text-sm font-medium text-ink">No API keys yet</div>
+        <p class="max-w-md text-sm text-muted">Issue your first key above to start authenticating requests against the relay API.</p>
+      </div>
     {% endif %}
   </section>
 </div>

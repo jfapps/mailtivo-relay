@@ -1,30 +1,30 @@
 {% extends "panel/base.html" %}
 {% block title %}{% if creating %}New pool{% else %}{{ pool.name }}{% endif %}{% endblock %}
 {% block topbar_breadcrumb %}
-  <span class="text-slate-300">/</span><a class="text-sm text-slate-500 hover:text-slate-700" href="{% url 'pools:list' %}">Pools</a>
-  <span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">{% if creating %}New{% else %}{{ pool.name }}{% endif %}</span>
+  <span class="text-faint">/</span><a class="text-sm text-muted hover:text-ink" href="{% url 'pools:list' %}">Pools</a>
+  <span class="text-faint">/</span><span class="text-sm font-medium text-ink">{% if creating %}New{% else %}{{ pool.name }}{% endif %}</span>
 {% endblock %}
 {% block content %}
 <div class="space-y-6" x-data="{ tab: 'overview' }">
   <header class="flex items-end justify-between">
     <div>
-      <h1 class="text-2xl font-semibold text-slate-900">{% if creating %}New pool{% else %}{{ pool.name }}{% endif %}</h1>
-      <p class="mt-1 text-sm text-slate-500">Pick a routing strategy, attach connections, optionally configure a warm-up curve.</p>
+      <h1 class="page-title">{% if creating %}New pool{% else %}{{ pool.name }}{% endif %}</h1>
+      <p class="page-subtitle">Pick a routing strategy, attach connections, optionally configure a warm-up curve.</p>
     </div>
     {% if not creating %}
       <form method="post" action="{% url 'pools:delete' pool.id %}" onsubmit="return confirm('Delete this pool? API keys pointing at it will lose their default pool.');">
         {% csrf_token %}
-        <button type="submit" class="btn-ghost text-xs text-red-600 hover:bg-red-50">Delete pool</button>
+        <button type="submit" class="btn-ghost btn-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10">Delete pool</button>
       </form>
     {% endif %}
   </header>
 
   {% if not creating %}
-    <nav class="flex gap-2 border-b border-slate-200">
-      <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='overview' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='overview'">Overview</button>
+    <nav class="flex gap-2 border-b border-line">
+      <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='overview' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-muted hover:text-ink'" x-on:click="tab='overview'">Overview</button>
       {% if not pool.is_capture %}
-        <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='members' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='members'">Members</button>
-        <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='warmup' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500 hover:text-slate-700'" x-on:click="tab='warmup'">Warm-up</button>
+        <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='members' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-muted hover:text-ink'" x-on:click="tab='members'">Members</button>
+        <button type="button" class="px-3 py-2 text-sm font-medium" :class="tab==='warmup' ? 'border-b-2 border-brand-600 text-brand-700' : 'text-muted hover:text-ink'" x-on:click="tab='warmup'">Warm-up</button>
       {% endif %}
     </nav>
   {% endif %}
@@ -32,8 +32,8 @@
   {% if not creating and pool.is_capture %}
     <section x-show="tab==='overview'" x-cloak class="card card-body flex items-start gap-3">
       <svg class="mt-0.5 h-5 w-5 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none"><path d="M9 3h6M10 3v5L5 18a2 2 0 002 3h10a2 2 0 002-3l-5-10V3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div class="text-sm text-slate-700">
-        <p class="font-medium text-slate-900">Capture pool — testing only</p>
+      <div class="text-sm text-ink">
+        <p class="font-medium text-ink">Capture pool — testing only</p>
         <p class="mt-1">Mail sent through this pool is captured and stored, never delivered to a real provider. Point a project's API key here to test sends safely. View captured mail in the <a class="font-medium text-brand-700 hover:underline" href="{% url 'messages_panel:test_inbox' %}">Test Inbox</a>.</p>
       </div>
     </section>
@@ -55,7 +55,7 @@
               <option value="{{ value }}" {% if form.mode.value == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
-          <p class="mt-1 text-xs text-slate-500" x-show="mode==='capture'" x-cloak>
+          <p class="help" x-show="mode==='capture'" x-cloak>
             Mail sent through this pool is stored in the <strong>Test Inbox</strong> and never delivered. No connections required — point a project's API key here to test sends safely.
           </p>
         </div>
@@ -69,7 +69,7 @@
           </select>
         </div>
         <div class="flex items-end gap-2">
-          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+          <label class="inline-flex items-center gap-2 text-sm text-ink">
             <input type="checkbox" name="health_skip_enabled" {% if form.health_skip_enabled.value %}checked{% endif %}>
             Skip degraded providers automatically
           </label>
@@ -84,37 +84,45 @@
         </div>
         </div>
       </div>
-      <div class="card-header bg-slate-50 justify-end gap-2">
-        <a href="{% url 'pools:list' %}" class="btn-ghost text-xs">Cancel</a>
-        <button type="submit" class="btn-primary text-xs">{% if creating %}Create pool{% else %}Save{% endif %}</button>
+      <div class="card-header bg-surface-2 justify-end gap-2">
+        <a href="{% url 'pools:list' %}" class="btn-ghost btn-sm">Cancel</a>
+        <button type="submit" class="btn-primary btn-sm">{% if creating %}Create pool{% else %}Save{% endif %}</button>
       </div>
     </form>
   </section>
 
   {% if not creating and not pool.is_capture %}
     <section x-show="tab==='members'" x-cloak class="space-y-4">
-      <div class="card">
+      <div class="card overflow-hidden">
         <div class="card-header">
-          <h2 class="text-sm font-semibold text-slate-900">Members</h2>
-          <span class="text-xs text-slate-500">{{ members|length }} attached</span>
+          <h2 class="section-title">Members</h2>
+          <span class="text-xs text-muted tnum">{{ members|length }} attached</span>
         </div>
         {% if members %}
-          <table class="data-table">
-            <thead><tr><th>Connection</th><th>Provider</th><th class="w-1/3">Weight</th><th>Priority</th><th>Enabled</th><th class="text-right">Actions</th></tr></thead>
-            <tbody id="pool-members-tbody">
-              {% for m in members %}
-                {% include "pools/_member_row.html" with m=m pool=pool %}
-              {% endfor %}
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="data-table">
+              <thead><tr><th>Connection</th><th>Provider</th><th class="w-1/3">Weight</th><th>Priority</th><th>Enabled</th><th class="text-right">Actions</th></tr></thead>
+              <tbody id="pool-members-tbody">
+                {% for m in members %}
+                  {% include "pools/_member_row.html" with m=m pool=pool %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         {% else %}
-          <div class="card-body py-8 text-center text-sm text-slate-500">No members yet — add one below.</div>
+          <div class="card-body flex flex-col items-center gap-3 py-14 text-center">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-faint">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M9 5h6m-6 14h6M5 9v6m14-6v6M7 7h10v10H7z" stroke="currentColor" stroke-width="1.8"/></svg>
+            </span>
+            <div class="text-sm font-medium text-ink">No members yet</div>
+            <p class="max-w-md text-sm text-muted">Attach a provider connection below to start routing sends through this pool.</p>
+          </div>
         {% endif %}
       </div>
 
       <div class="card">
         <div class="card-header">
-          <h2 class="text-sm font-semibold text-slate-900">Add member</h2>
+          <h2 class="section-title">Add member</h2>
         </div>
         <form method="post" action="{% url 'pools:member_add' pool.id %}" class="card-body grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr_1fr_auto] md:items-end">
           {% csrf_token %}
@@ -143,8 +151,8 @@
       <form method="post" action="{% url 'pools:warmup_save' pool.id %}" class="card">
         {% csrf_token %}
         <div class="card-header">
-          <h2 class="text-sm font-semibold text-slate-900">Warm-up plan</h2>
-          <label class="inline-flex items-center gap-2 text-xs text-slate-600">
+          <h2 class="section-title">Warm-up plan</h2>
+          <label class="inline-flex items-center gap-2 text-xs text-muted">
             <input type="checkbox" name="enabled" {% if warmup_form.enabled.value %}checked{% endif %}> Enabled
           </label>
         </div>
@@ -164,11 +172,11 @@
           <div class="md:col-span-2">
             <label class="label" for="id_daily_caps_csv">Custom curve (comma-separated daily caps)</label>
             <textarea class="input font-mono text-xs" rows="3" name="daily_caps_csv" id="id_daily_caps_csv" placeholder="50, 100, 500, 1000, ...">{{ warmup_form.daily_caps_csv.value|default_if_none:'' }}</textarea>
-            <p class="mt-1 text-xs text-slate-500">Only used when curve = Custom. Empty fields fall back to the preset curve.</p>
+            <p class="help">Only used when curve = Custom. Empty fields fall back to the preset curve.</p>
           </div>
         </div>
-        <div class="card-header bg-slate-50 justify-end">
-          <button type="submit" class="btn-primary text-xs">Save warm-up</button>
+        <div class="card-header bg-surface-2 justify-end">
+          <button type="submit" class="btn-primary btn-sm">Save warm-up</button>
         </div>
       </form>
     </section>

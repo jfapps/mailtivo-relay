@@ -1,13 +1,79 @@
 @import "tailwindcss";
 
+/* Toggle dark mode by adding `class="dark"` to <html>. We keep the sidebar a
+   constant near-black spine in both themes (Resend/Vercel style); everything
+   else flips via the semantic tokens below. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Scan our templates so Tailwind generates the right utility classes. */
 @source "../../apps/**/templates/**/*.html";
 @source "../../mailtivo_relay/templates/**/*.html";
 @source "../../apps/**/*.py";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+/* ----------------------------------------------------------------------------
+   Semantic surface tokens — light defaults here, dark overrides further down.
+   Utilities (bg-canvas, bg-surface, border-line, text-ink, …) are generated
+   from the @theme inline block so they resolve these variables at the element,
+   which is what makes a single `.dark` class flip the whole UI.
+---------------------------------------------------------------------------- */
+:root {
+  --canvas:       #fafafa;  /* app background            */
+  --surface:      #ffffff;  /* cards, panels, inputs     */
+  --surface-2:    #f4f4f5;  /* inset / hover / subtle    */
+  --surface-3:    #ededee;  /* stronger fill             */
+  --line:         #e9e9ec;  /* hairline borders          */
+  --line-strong:  #d9d9de;  /* emphasised borders        */
+  --ink:          #18181b;  /* primary text              */
+  --muted:        #5b5b63;  /* secondary text            */
+  --faint:        #8c8c95;  /* tertiary / placeholder    */
+  --ring:         var(--color-brand-500);
 
+  /* Constant dark spine (sidebar) — same values in light + dark. */
+  --spine:        #0b0b0d;
+  --spine-line:   #1c1c20;
+  --spine-text:   #a1a1ac;
+  --spine-muted:  #71717a;
+}
+
+.dark {
+  --canvas:       #08080a;
+  --surface:      #121214;
+  --surface-2:    #1a1a1d;
+  --surface-3:    #232327;
+  --line:         #232327;
+  --line-strong:  #34343a;
+  --ink:          #f4f4f5;
+  --muted:        #a1a1ac;
+  --faint:        #71717a;
+  --ring:         var(--color-brand-400);
+}
+
+@theme inline {
+  --color-canvas:      var(--canvas);
+  --color-surface:     var(--surface);
+  --color-surface-2:   var(--surface-2);
+  --color-surface-3:   var(--surface-3);
+  --color-line:        var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink:         var(--ink);
+  --color-muted:       var(--muted);
+  --color-faint:       var(--faint);
+  --color-ring:        var(--ring);
+
+  --color-spine:       var(--spine);
+  --color-spine-line:  var(--spine-line);
+  --color-spine-text:  var(--spine-text);
+  --color-spine-muted: var(--spine-muted);
+}
+
+@theme {
+  /* Geist — Vercel's open-source family. Distinctive but precise; the mono
+     drives tabular numerics in tables, KPIs and code so figures line up. */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", "Menlo", monospace;
+
+  /* Accent scale (indigo/iris). Kept stable across themes; existing brand-*
+     utilities throughout the templates continue to resolve here. */
   --color-brand-50:  #eef2ff;
   --color-brand-100: #e0e7ff;
   --color-brand-200: #c7d2fe;
@@ -25,61 +91,108 @@
 }
 
 /* ---------- Reusable component classes ----------
-   Tailwind v4 disallows @apply'ing custom component classes, so each variant
-   inlines its utility chain rather than building on a base .btn rule. */
+   Tailwind v4 disallows @apply'ing custom *component* classes, so each variant
+   inlines its utility chain. Theme-derived utilities (bg-surface, border-line,
+   text-ink, …) ARE applyable, which is what keeps these components theme-aware. */
 @layer components {
+  /* Buttons -------------------------------------------------------------- */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white shadow-xs transition hover:bg-brand-700 active:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line-strong bg-surface px-3.5 py-2 text-sm font-medium text-ink shadow-xs transition hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-medium text-white shadow-xs transition hover:bg-red-700 active:bg-red-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-transparent px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-transparent px-3.5 py-2 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50;
   }
+  /* Compact variant for table-row / inline actions. */
+  .btn-sm { @apply px-2.5 py-1.5 text-xs; }
 
+  /* Forms ---------------------------------------------------------------- */
   .input {
-    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs transition placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200;
+    @apply w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink shadow-xs transition placeholder:text-faint focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25;
   }
-  .label { @apply mb-1.5 block text-xs font-medium text-slate-600; }
+  .label { @apply mb-1.5 block text-xs font-medium text-muted; }
   .field-error { @apply mt-1 text-xs text-red-600; }
+  .help { @apply mt-1.5 text-xs text-faint; }
 
-  .card { @apply rounded-xl border border-slate-200 bg-white shadow-xs; }
-  .card-header { @apply flex items-center justify-between border-b border-slate-100 px-5 py-4; }
+  /* Surfaces ------------------------------------------------------------- */
+  .card { @apply rounded-xl border border-line bg-surface shadow-xs; }
+  .card-header { @apply flex items-center justify-between gap-3 border-b border-line px-5 py-4; }
   .card-body { @apply px-5 py-5; }
 
-  .badge-green  { @apply inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200; }
-  .badge-yellow { @apply inline-flex items-center gap-1.5 rounded-full bg-amber-50  px-2 py-0.5 text-xs font-medium text-amber-700  ring-1 ring-inset ring-amber-200;  }
-  .badge-red    { @apply inline-flex items-center gap-1.5 rounded-full bg-red-50    px-2 py-0.5 text-xs font-medium text-red-700    ring-1 ring-inset ring-red-200;    }
-  .badge-slate  { @apply inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700; }
+  /* Badges --------------------------------------------------------------- */
+  .badge-green  { @apply inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/25; }
+  .badge-yellow { @apply inline-flex items-center gap-1.5 rounded-full bg-amber-50  px-2 py-0.5 text-xs font-medium text-amber-700  ring-1 ring-inset ring-amber-200  dark:bg-amber-500/10  dark:text-amber-400  dark:ring-amber-500/25;  }
+  .badge-red    { @apply inline-flex items-center gap-1.5 rounded-full bg-red-50    px-2 py-0.5 text-xs font-medium text-red-700    ring-1 ring-inset ring-red-200    dark:bg-red-500/10    dark:text-red-400    dark:ring-red-500/25;    }
+  .badge-slate  { @apply inline-flex items-center gap-1.5 rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-muted; }
 
+  /* Sidebar (constant dark spine) ---------------------------------------- */
   .sidebar-link {
-    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800/70 hover:text-white;
+    @apply relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-spine-text transition-colors hover:bg-white/5 hover:text-white;
   }
+  .sidebar-link svg { @apply h-4 w-4 shrink-0 text-spine-muted transition-colors; }
+  .sidebar-link:hover svg { @apply text-slate-300; }
   .sidebar-link[aria-current="page"] {
-    @apply bg-slate-800 text-white;
+    @apply bg-white/10 text-white;
+  }
+  .sidebar-link[aria-current="page"] svg { @apply text-brand-400; }
+  .sidebar-link[aria-current="page"]::before {
+    content: "";
+    @apply absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-brand-500;
   }
 
+  /* Thin, unobtrusive scrollbar for the dark sidebar nav. */
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #2a2a30 transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar { width: 6px; }
+  .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-scroll::-webkit-scrollbar-thumb { @apply rounded-full bg-spine-line; }
+  .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #3a3a42; }
+
+  /* Data tables ---------------------------------------------------------- */
   .data-table { @apply w-full text-left text-sm; }
-  .data-table thead th { @apply border-b border-slate-200 px-5 py-3 text-xs font-medium uppercase tracking-wide text-slate-500; }
-  .data-table tbody td { @apply border-b border-slate-100 px-5 py-3 text-slate-700; }
+  .data-table thead th { @apply border-b border-line px-5 py-3 text-xs font-medium uppercase tracking-wide text-faint; }
+  .data-table tbody td { @apply border-b border-line px-5 py-3 text-muted; }
   .data-table tbody tr:last-child td { @apply border-b-0; }
+  .data-table tbody tr { @apply transition-colors hover:bg-surface-2; }
 
-  .kbd  { @apply rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700; }
-  .code { @apply rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[0.8125rem] text-slate-800; }
+  /* Code + keys ---------------------------------------------------------- */
+  .kbd  { @apply rounded border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-muted; }
+  .code { @apply rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[0.8125rem] text-ink; }
 
-  .alert-success { @apply rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800; }
-  .alert-info    { @apply rounded-lg border border-slate-200   bg-slate-50   px-4 py-3 text-sm text-slate-800;   }
-  .alert-error   { @apply rounded-lg border border-red-200     bg-red-50     px-4 py-3 text-sm text-red-800;     }
+  /* Alerts --------------------------------------------------------------- */
+  .alert-success { @apply rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300; }
+  .alert-info    { @apply rounded-lg border border-line bg-surface-2 px-4 py-3 text-sm text-ink; }
+  .alert-error   { @apply rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-300; }
+
+  /* Page scaffolding helpers (use these on new/polished pages). */
+  .page-title   { @apply text-2xl font-semibold tracking-tight text-ink; }
+  .page-subtitle{ @apply mt-1 text-sm text-muted; }
+  .section-title{ @apply text-sm font-semibold text-ink; }
+  .eyebrow      { @apply text-xs font-medium uppercase tracking-wide text-faint; }
+
+  /* Tabular figures for metrics / counts so digits align. */
+  .tnum { font-variant-numeric: tabular-nums; }
 }
 
 @layer base {
   html { font-family: var(--font-sans); }
-  body { @apply bg-slate-50 text-slate-900 antialiased; }
-  a { @apply text-brand-600; }
-  a:hover { @apply text-brand-700; }
+  body { @apply bg-canvas text-ink antialiased; }
+  a { @apply text-brand-600 dark:text-brand-400; }
+  a:hover { @apply text-brand-700 dark:text-brand-300; }
   [x-cloak] { display: none !important; }
+
+  /* Smooth, intentional theme transitions on the big surfaces. */
+  body, .card, .input, .data-table tbody tr {
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
 }

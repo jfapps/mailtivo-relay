@@ -77,6 +77,9 @@ class NormalizedEvent:
     user_agent: str = ""
     ip: str = ""
     bounce_reason: str = ""
+    # "hard" | "soft" | "unknown" — how permanent a bounce is. Hard and unknown
+    # bounces auto-suppress the recipient; soft (transient) bounces do not.
+    bounce_class: str = "unknown"
 
     def __post_init__(self) -> None:
         if self.type not in self.EVENT_TYPES:

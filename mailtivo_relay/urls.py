@@ -23,6 +23,7 @@ urlpatterns = [
     path("app/suppressions/", include("apps.suppressions.urls")),
     path("app/webhooks/", include("apps.events.panel_urls")),
     path("app/tools/", include("apps.tools.urls")),
+    path("app/integrations/", include("apps.spam_analysis.urls")),
     path("app/audit/", include("apps.audit.urls")),
     path("api/v1/", include("apps.messages_api.urls")),
     path("webhooks/", include("apps.events.urls")),

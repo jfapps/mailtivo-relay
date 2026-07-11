@@ -113,10 +113,31 @@ class WorkspaceSettings(models.Model):
     name = models.CharField(max_length=120, default="My Workspace")
     from_email_default = models.EmailField(blank=True)
     retention_days = models.PositiveIntegerField(default=30)
+    # Master switch for the daily retention purge (apps.messages_api.tasks).
+    # When off, expired bodies are kept until purged manually from Data & storage.
+    retention_enabled = models.BooleanField(default=True)
 
     google_oauth_enabled = models.BooleanField(default=False)
     google_oauth_client_id = models.CharField(max_length=255, blank=True)
     google_oauth_client_secret_encrypted = models.BinaryField(blank=True, default=b"")
+
+    # Spam analysis integrations (see apps.spam_analysis). One active AI provider
+    # for content scoring + an optional Google Safe Browsing key for link checks.
+    AI_PROVIDER_OPENAI = "openai"
+    AI_PROVIDER_ANTHROPIC = "anthropic"
+    AI_PROVIDER_GEMINI = "gemini"
+    AI_PROVIDER_CHOICES = [
+        (AI_PROVIDER_OPENAI, "OpenAI"),
+        (AI_PROVIDER_ANTHROPIC, "Anthropic"),
+        (AI_PROVIDER_GEMINI, "Google Gemini"),
+    ]
+
+    ai_provider = models.CharField(max_length=20, blank=True, choices=AI_PROVIDER_CHOICES)
+    ai_model = models.CharField(max_length=80, blank=True)
+    ai_api_key_encrypted = models.BinaryField(blank=True, default=b"")
+
+    safe_browsing_enabled = models.BooleanField(default=False)
+    safe_browsing_api_key_encrypted = models.BinaryField(blank=True, default=b"")
 
     branding_logo = models.ImageField(upload_to="branding/", blank=True, null=True)
 

@@ -1,18 +1,18 @@
 {% extends "accounts/_layout.html" %}
 {% block title %}Accept invitation · Mailtivo-Relay{% endblock %}
 {% block content %}
-<div>
-  <h1 class="text-xl font-semibold text-slate-900">You're invited</h1>
-  <p class="mt-1 text-sm text-slate-500">Create your account for <span class="code">{{ invitation.email }}</span>.</p>
+<div class="space-y-1">
+  <h1 class="text-xl font-semibold tracking-tight text-ink">You're invited</h1>
+  <p class="text-sm text-muted">Create your account for <span class="code">{{ invitation.email }}</span>.</p>
 </div>
 <form method="post" class="space-y-4" novalidate>
   {% csrf_token %}
   <div>
-    <label class="label" for="id_display_name">Display name <span class="text-slate-400">(optional)</span></label>
+    <label class="label" for="id_display_name">Display name <span class="text-faint">(optional)</span></label>
     <input class="input" type="text" name="display_name" id="id_display_name">
   </div>
   <div>
-    <label class="label" for="id_password">Password <span class="text-slate-400">(min 12 characters)</span></label>
+    <label class="label" for="id_password">Password <span class="text-faint">(min 12 characters)</span></label>
     <input class="input" type="password" name="password" id="id_password" required minlength="12">
   </div>
   <div>

@@ -86,10 +86,14 @@ member out while `skip_until > now()`; the next successful send clears it.
 
 - `POST /webhooks/postal/<connection_id>/`
 - `POST /webhooks/resend/<connection_id>/`
+- `POST /webhooks/ses/<connection_id>/` — an SNS HTTPS endpoint; it verifies
+  the SNS signature on every message type, auto-confirms
+  `SubscriptionConfirmation`s, and feeds `Notification`s into the shared
+  ingest path (see [providers/ses.md](providers/ses.md)).
 
-Both endpoints look up the connection, call `adapter.verify_webhook(headers,
-body)` (RSA-PKCS1v15 for Postal, Svix HMAC for Resend), parse via
-`adapter.parse_event`, and persist a single `Event` row. The
+All endpoints look up the connection, call `adapter.verify_webhook(headers,
+body)` (RSA-PKCS1v15 for Postal, Svix HMAC for Resend, SNS X.509 signature
+for SES), parse via `adapter.parse_event`, and persist a single `Event` row. The
 `provider_event_id` column is `UNIQUE`, so duplicate redeliveries auto-dedupe
 at the database. For Resend we override the parser's id with the Svix `svix-id`
 header so dedup keys match Resend's own retry semantics.

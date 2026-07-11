@@ -1,32 +1,32 @@
 {% if result %}
   <section class="card">
     <div class="card-header">
-      <h2 class="text-sm font-semibold text-slate-900">Result</h2>
+      <h2 class="section-title">Result</h2>
       {% if result.ok %}
-        <span class="badge-green">Sent</span>
+        <span class="badge-green"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Sent</span>
       {% else %}
         <span class="badge-red">{{ result.status|capfirst }}</span>
       {% endif %}
     </div>
     <div class="card-body space-y-3 text-sm">
       {% if result.ok %}
-        <p class="text-slate-700">
+        <p class="text-ink">
           Delivered to your provider via
           <span class="font-medium">{{ result.message.connection.name|default:"—" }}</span>.
         </p>
       {% else %}
-        <p class="text-slate-700">The relay could not send this message. Provider response:</p>
+        <p class="text-ink">The relay could not send this message. Provider response:</p>
         <pre class="overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">{{ result.message.last_error|default:"No error detail recorded." }}</pre>
       {% endif %}
       <dl class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
         <div>
-          <dt class="text-xs text-slate-400">Message ID</dt>
-          <dd><a class="code hover:underline" href="{% url 'messages_panel:detail' result.message.id %}">{{ result.message.id }}</a></dd>
+          <dt class="eyebrow">Message ID</dt>
+          <dd><a class="code tnum hover:underline" href="{% url 'messages_panel:detail' result.message.id %}">{{ result.message.id }}</a></dd>
         </div>
         {% if result.message.provider_message_id %}
           <div>
-            <dt class="text-xs text-slate-400">Provider message ID</dt>
-            <dd class="code">{{ result.message.provider_message_id }}</dd>
+            <dt class="eyebrow">Provider message ID</dt>
+            <dd class="code tnum">{{ result.message.provider_message_id }}</dd>
           </div>
         {% endif %}
       </dl>

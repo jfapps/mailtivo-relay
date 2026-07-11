@@ -135,6 +135,23 @@ def test_messages_list_excludes_captured(auth_client):
 
 
 @pytest.mark.django_db
+def test_test_inbox_shows_capture_stats(auth_client):
+    _msg(sandbox=True, subject="captured-one")
+    _msg(sandbox=True, subject="captured-two")
+    r = auth_client.get(reverse("messages_panel:test_inbox"))
+    assert b"Total captured" in r.content
+    assert b"Hourly capture" in r.content
+
+
+@pytest.mark.django_db
+def test_live_messages_list_has_no_capture_stats(auth_client):
+    # The volume strip is a Test Inbox affordance only — never on the live list.
+    _msg(sandbox=False, subject="live-one")
+    r = auth_client.get(reverse("messages_panel:list"))
+    assert b"Total captured" not in r.content
+
+
+@pytest.mark.django_db
 def test_captured_message_detail_renders(auth_client):
     m = _msg(sandbox=True, subject="captured-detail")
     r = auth_client.get(reverse("messages_panel:detail", args=[m.id]))

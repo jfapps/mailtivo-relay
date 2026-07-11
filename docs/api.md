@@ -66,7 +66,10 @@ Rules:
 - At least one of `html` or `text` is required.
 - `to`, `cc`, `bcc`, `reply_to` accept either a string or a list of strings.
 - `attachments[].content` is base64; URL-based attachments (`path`) aren't supported in v1.
-- `scheduled_at` is ISO-8601.
+- `scheduled_at` is ISO-8601, at most 30 days ahead. A future timestamp defers
+  dispatch until that time (the message shows as `scheduled`); a past or absent
+  timestamp sends immediately. Scheduled dispatch runs on the worker, so the
+  `worker` service must be up. There is no cancel endpoint yet.
 
 ### Headers
 

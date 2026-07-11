@@ -1,42 +1,59 @@
 <div class="space-y-6">
   <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="card card-body">
-      <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Sent · last {{ kpis.window_hours }}h</div>
-      <div class="mt-2 text-3xl font-semibold text-slate-900">{{ kpis.sent }}</div>
-      <div class="mt-1 text-xs text-slate-400">{{ kpis.queued }} queued / sending</div>
+    <div class="card card-body relative overflow-hidden">
+      <div class="eyebrow">Sent · last {{ kpis.window_hours }}h</div>
+      <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ kpis.sent }}</div>
+      <div class="mt-1 text-xs text-faint">{{ kpis.queued }} queued / sending</div>
     </div>
-    <div class="card card-body">
-      <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Delivery rate</div>
-      <div class="mt-2 text-3xl font-semibold text-slate-900">{{ kpis.delivery_rate|floatformat:1 }}<span class="text-base text-slate-400">%</span></div>
-      <div class="mt-1 text-xs text-slate-400">{{ kpis.delivered }} delivered</div>
+
+    <div class="card card-body relative overflow-hidden">
+      <div class="eyebrow">Delivery rate</div>
+      <div class="mt-2 flex items-baseline gap-1 font-mono text-3xl font-semibold tracking-tight tnum {% if kpis.delivery_rate >= 95 %}text-emerald-600 dark:text-emerald-400{% else %}text-ink{% endif %}">
+        {{ kpis.delivery_rate|floatformat:1 }}<span class="text-base font-normal text-faint">%</span>
+      </div>
+      <div class="mt-1 text-xs text-faint">{{ kpis.delivered }} delivered</div>
     </div>
-    <div class="card card-body">
-      <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Bounce rate</div>
-      <div class="mt-2 text-3xl font-semibold {% if kpis.bounce_rate >= 5 %}text-red-600{% else %}text-slate-900{% endif %}">{{ kpis.bounce_rate|floatformat:1 }}<span class="text-base text-slate-400">%</span></div>
-      <div class="mt-1 text-xs text-slate-400">{{ kpis.bounced }} bounced</div>
+
+    <div class="card card-body relative overflow-hidden">
+      <div class="eyebrow">Bounce rate</div>
+      <div class="mt-2 flex items-baseline gap-1 font-mono text-3xl font-semibold tracking-tight tnum {% if kpis.bounce_rate >= 5 %}text-red-600 dark:text-red-400{% else %}text-ink{% endif %}">
+        {{ kpis.bounce_rate|floatformat:1 }}<span class="text-base font-normal text-faint">%</span>
+      </div>
+      <div class="mt-1 text-xs text-faint">{{ kpis.bounced }} bounced</div>
     </div>
-    <div class="card card-body">
-      <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Complaints / failed</div>
-      <div class="mt-2 text-3xl font-semibold text-slate-900">{{ kpis.complained }} <span class="text-base text-slate-400">/ {{ kpis.failed }}</span></div>
-      <div class="mt-1 text-xs text-slate-400">last {{ kpis.window_hours }}h</div>
+
+    <div class="card card-body relative overflow-hidden">
+      <div class="eyebrow">Complaints / failed</div>
+      <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ kpis.complained }} <span class="text-base font-normal text-faint">/ {{ kpis.failed }}</span></div>
+      <div class="mt-1 text-xs text-faint">last {{ kpis.window_hours }}h</div>
     </div>
   </section>
 
   <section class="card">
     <div class="card-header">
-      <h2 class="text-sm font-semibold text-slate-900">Hourly throughput</h2>
-      <span class="text-xs text-slate-500">peak {{ kpis.sparkline_peak }}/h</span>
+      <h2 class="section-title">Hourly throughput</h2>
+      <span class="font-mono text-xs text-muted tnum">peak {{ kpis.sparkline_peak }}/h</span>
     </div>
     <div class="card-body">
       {% if kpis.sparkline_peak %}
-        <div class="flex h-24 items-end gap-1">
+        <div class="flex h-28 items-end gap-1">
           {% for v in kpis.sparkline %}
             {% widthratio v kpis.sparkline_peak 100 as pct %}
-            <div class="flex-1 rounded-t bg-brand-500/80" style="height: {{ pct|default:1 }}%" title="{{ v }}"></div>
+            <div class="group relative flex-1">
+              <div class="w-full rounded-t-sm bg-brand-500/70 transition-colors group-hover:bg-brand-500" style="height: {{ pct|default:1 }}%; min-height: 2px;"></div>
+              <div class="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-0.5 font-mono text-[10px] font-medium text-canvas opacity-0 shadow-sm transition-opacity group-hover:opacity-100">{{ v }}</div>
+            </div>
           {% endfor %}
         </div>
+        <div class="mt-2 flex justify-between text-[11px] text-faint">
+          <span>{{ kpis.window_hours }}h ago</span>
+          <span>now</span>
+        </div>
       {% else %}
-        <div class="flex h-24 items-center justify-center text-xs text-slate-400">No messages in the window yet.</div>
+        <div class="flex h-28 flex-col items-center justify-center gap-1 text-center">
+          <svg class="h-6 w-6 text-faint" viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M8 16l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="text-xs text-faint">No messages in the window yet.</span>
+        </div>
       {% endif %}
     </div>
   </section>

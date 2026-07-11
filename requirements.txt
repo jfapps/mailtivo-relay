@@ -11,6 +11,9 @@ croniter>=2.0
 # API
 djangorestframework>=3.15
 
+# AI / spam analysis (apps.spam_analysis)
+simplerllm>=0.3
+
 # UI
 django-htmx>=1.26
 django-tailwind>=3.8

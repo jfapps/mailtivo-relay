@@ -28,12 +28,19 @@ git clone https://github.com/your-org/mailtivo-relay
 cd mailtivo-relay
 cp .env.example .env
 
-# Mint a body-encryption key.
+# Mint the two required secrets (the app refuses to boot in prod without them).
+python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(64))" >> .env
 python -c "from cryptography.fernet import Fernet; print('RELAY_FERNET_KEY=' + Fernet.generate_key().decode())" >> .env
 
 docker compose up -d --build
 open http://localhost:8000   # onboarding wizard → first owner account
 ```
+
+Deploying for real (Coolify or any docker host)? Also set
+`DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS` to your domain
+(e.g. `relay.example.com` and `https://relay.example.com`), keep
+`DATABASE_URL` pointing at Postgres, and make sure **both** the `web` and
+`worker` services run — queued mail is only dispatched by the worker.
 
 1. Onboarding: pick a workspace name + create the owner account.
 2. **Connections** → add a Resend or Postal connection. Click *Test*.

@@ -10,9 +10,11 @@ class Connection(models.Model):
 
     PROVIDER_POSTAL = "postal"
     PROVIDER_RESEND = "resend"
+    PROVIDER_SES = "ses"
     PROVIDER_CHOICES = [
         (PROVIDER_RESEND, "Resend"),
         (PROVIDER_POSTAL, "Postal"),
+        (PROVIDER_SES, "Amazon SES"),
     ]
 
     STATUS_UNKNOWN = "unknown"
@@ -28,9 +30,21 @@ class Connection(models.Model):
 
     name = models.CharField(max_length=120, unique=True)
     provider_code = models.CharField(max_length=32, choices=PROVIDER_CHOICES)
-    base_url = models.URLField(blank=True, help_text="Postal: required (e.g. https://postal.example.com). Resend: optional override.")
+    base_url = models.URLField(blank=True, help_text="Postal: required (e.g. https://postal.example.com). Resend: optional override. SES: ignored (endpoint derived from region).")
+
+    # SES-only, non-secret. The two AWS secrets (access key id + secret access
+    # key) are packed as JSON into credentials_encrypted below.
+    aws_region = models.CharField(max_length=32, blank=True, help_text="SES: AWS region, e.g. us-east-1.")
+    ses_configuration_set = models.CharField(max_length=128, blank=True, help_text="SES: configuration set name; required for SES to publish open/click/delivery events to SNS.")
+    # SNS topic this connection's webhook trusts. Auto-captured from the first
+    # confirmed subscription (TOFU) if left blank; afterwards, notifications
+    # from any other topic are rejected — a validly-SNS-signed message from an
+    # attacker's own topic must not be able to inject events.
+    sns_topic_arn = models.CharField(max_length=255, blank=True, help_text="SES: SNS topic ARN allowed to deliver events. Leave blank to lock onto the first topic that confirms a subscription.")
 
     # Per-Connection credentials — encrypted with Fernet (apps.core.encryption).
+    #   - Postal/Resend: the API key string.
+    #   - SES: json.dumps({"access_key_id": "...", "secret_access_key": "..."}).
     credentials_encrypted = models.BinaryField(blank=True, default=b"")
     # Webhook verification material:
     #   - Resend: HMAC signing secret ("whsec_..." Svix shared secret) — encrypted.

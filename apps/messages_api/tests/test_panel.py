@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.events.models import Event
 from apps.messages_api.models import Message
-from django.utils import timezone
 
 
 @pytest.fixture
@@ -98,6 +98,75 @@ def test_message_detail_renders_envelope_and_events(auth_client):
 def test_message_detail_404(auth_client):
     r = auth_client.get(reverse("messages_panel:detail", args=["01000000000000000000000000"]))
     assert r.status_code == 404
+
+
+@pytest.mark.django_db
+def test_spam_tab_shows_analyze_when_configured(auth_client):
+    from apps.accounts.models import WorkspaceSettings
+    from apps.core.encryption import encrypt
+
+    ws = WorkspaceSettings.load()
+    ws.ai_provider = "openai"
+    ws.ai_api_key_encrypted = encrypt("sk-test")
+    ws.save()
+    msg = _make_message()
+    r = auth_client.get(reverse("messages_panel:detail", args=[msg.id]))
+    assert r.status_code == 200
+    assert b"Analyze for spam" in r.content
+
+
+@pytest.mark.django_db
+def test_spam_tab_prompts_to_configure_when_not(auth_client):
+    msg = _make_message()
+    r = auth_client.get(reverse("messages_panel:detail", args=[msg.id]))
+    assert r.status_code == 200
+    assert b"Configure an AI provider" in r.content
+
+
+@pytest.mark.django_db
+def test_analyze_enqueues_and_returns_running_panel(auth_client):
+    from unittest import mock
+
+    msg = _make_message()
+    with mock.patch("django_q.tasks.async_task") as async_task:
+        r = auth_client.post(reverse("messages_panel:analyze", args=[msg.id]))
+    assert r.status_code == 200
+    async_task.assert_called_once_with("apps.spam_analysis.tasks.analyze_message", msg.id)
+    assert b"Analyzing message" in r.content
+    msg.refresh_from_db()
+    assert msg.spam_report == {"state": "running"}
+
+
+@pytest.mark.django_db
+def test_spam_panel_renders_done_result(auth_client):
+    msg = _make_message()
+    msg.spam_score = 82
+    msg.spam_verdict = "spam"
+    msg.spam_report = {
+        "state": "done",
+        "score": 82,
+        "verdict": "spam",
+        "provider": "openai",
+        "model": "gpt-4o-mini",
+        "ai": {"score": 82, "summary": "Looks like phishing", "findings": [{"label": "Urgency", "detail": "acts now"}]},
+        "links": {"checked": True, "error": "", "flagged_count": 1,
+                  "results": [{"url": "http://bad.test/x", "flagged": True, "threats": ["MALWARE"]}]},
+    }
+    msg.spam_analyzed_at = timezone.now()
+    msg.save()
+    r = auth_client.get(reverse("messages_panel:spam_panel", args=[msg.id]))
+    assert r.status_code == 200
+    assert b"Looks like phishing" in r.content
+    assert b"MALWARE" in r.content
+    assert b"82" in r.content
+
+
+@pytest.mark.django_db
+def test_analyze_requires_login(client):
+    msg = _make_message()
+    r = client.post(reverse("messages_panel:analyze", args=[msg.id]))
+    assert r.status_code in (301, 302)
+    assert "/login" in r["Location"]
 
 
 @pytest.mark.django_db

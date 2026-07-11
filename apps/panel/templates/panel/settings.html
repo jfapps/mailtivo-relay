@@ -1,18 +1,18 @@
 {% extends "panel/base.html" %}
 {% block title %}Settings{% endblock %}
-{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Settings</span>{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">Settings</span>{% endblock %}
 {% block content %}
 <div class="space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Workspace settings</h1>
-    <p class="mt-1 text-sm text-slate-500">Configure your workspace and how Mailtivo-Relay behaves.</p>
+    <h1 class="page-title">Workspace settings</h1>
+    <p class="page-subtitle">Configure your workspace and how Mailtivo-Relay behaves.</p>
   </header>
 
   <section class="card">
     <div class="card-header">
       <div>
-        <h2 class="text-sm font-semibold text-slate-900">General</h2>
-        <p class="text-xs text-slate-500">Workspace name, default sender, and message retention.</p>
+        <h2 class="section-title">General</h2>
+        <p class="text-xs text-muted">Workspace name, default sender, and message retention.</p>
       </div>
     </div>
     <form method="post" class="card-body space-y-5" novalidate>
@@ -26,12 +26,22 @@
       <div>
         <label class="label" for="id_ws-from_email_default">Default <span class="code">from</span> email</label>
         <input class="input" name="ws-from_email_default" id="id_ws-from_email_default" value="{{ settings_form.from_email_default.value|default_if_none:'' }}" placeholder="hi@yourdomain.com">
-        <p class="mt-1 text-xs text-slate-500">Used when an API request omits the <span class="code">from</span> field. Optional.</p>
+        <p class="help">Used when an API request omits the <span class="code">from</span> field. Optional.</p>
+      </div>
+      <div>
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" name="ws-retention_enabled" class="mt-1 h-4 w-4 rounded border-line-strong text-brand-600 focus:ring-brand-500"
+                 {% if settings_form.retention_enabled.value %}checked{% endif %}>
+          <span>
+            <span class="block text-sm font-medium text-ink">Automatic retention purge</span>
+            <span class="block text-xs text-muted">Once a day, purge message bodies and attachments past the retention window. When off, nothing is deleted automatically — you can still purge manually from <a href="{% url 'panel:data' %}" class="font-medium text-brand-600 hover:underline">Data &amp; storage</a>.</span>
+          </span>
+        </label>
       </div>
       <div>
         <label class="label" for="id_ws-retention_days">Message body retention (days)</label>
         <input class="input" type="number" min="1" max="365" name="ws-retention_days" id="id_ws-retention_days" value="{{ settings_form.retention_days.value }}">
-        <p class="mt-1 text-xs text-slate-500">After this many days, message bodies and attachments are purged. Metadata + events are retained.</p>
+        <p class="help">After this many days, message bodies and attachments are purged. Metadata + events are retained.</p>
         {% if settings_form.retention_days.errors %}<div class="field-error">{{ settings_form.retention_days.errors|join:" " }}</div>{% endif %}
       </div>
       <div class="flex justify-end">
@@ -43,31 +53,31 @@
   <section class="card" id="updates">
     <div class="card-header">
       <div>
-        <h2 class="text-sm font-semibold text-slate-900">Version &amp; updates</h2>
-        <p class="text-xs text-slate-500">You're running Mailtivo-Relay <span class="code">v{{ app_version }}</span>.</p>
+        <h2 class="section-title">Version &amp; updates</h2>
+        <p class="text-xs text-muted">You're running Mailtivo-Relay <span class="code">v{{ app_version }}</span>.</p>
       </div>
       {% if update_available %}
         <span class="badge-yellow">Update available</span>
       {% else %}
-        <span class="badge-green">Up to date</span>
+        <span class="badge-green"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Up to date</span>
       {% endif %}
     </div>
     <div class="card-body space-y-5">
       <dl class="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <dt class="text-xs text-slate-500">Current version</dt>
-          <dd class="font-medium text-slate-900">v{{ app_version }}</dd>
+          <dt class="eyebrow">Current version</dt>
+          <dd class="font-mono text-sm font-medium text-ink tnum">v{{ app_version }}</dd>
         </div>
         <div>
-          <dt class="text-xs text-slate-500">Latest release</dt>
-          <dd class="font-medium text-slate-900">
-            {% if latest_version %}{{ latest_version }}{% else %}<span class="text-slate-400">unknown</span>{% endif %}
+          <dt class="eyebrow">Latest release</dt>
+          <dd class="font-mono text-sm font-medium text-ink tnum">
+            {% if latest_version %}{{ latest_version }}{% else %}<span class="font-sans text-faint">unknown</span>{% endif %}
           </dd>
         </div>
         <div class="col-span-2">
-          <dt class="text-xs text-slate-500">Last checked</dt>
-          <dd class="text-slate-700">
-            {% if workspace.update_checked_at %}{{ workspace.update_checked_at }}{% else %}<span class="text-slate-400">never</span>{% endif %}
+          <dt class="eyebrow">Last checked</dt>
+          <dd class="font-mono text-sm text-ink tnum">
+            {% if workspace.update_checked_at %}{{ workspace.update_checked_at }}{% else %}<span class="font-sans text-faint">never</span>{% endif %}
           </dd>
         </div>
       </dl>
@@ -77,18 +87,18 @@
            class="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:underline">
           View release notes for {{ latest_version }} →
         </a>
-        <p class="text-xs text-slate-500">Updating is a manual step — see the <span class="code">Updating</span> section of the README.</p>
+        <p class="help">Updating is a manual step — see the <span class="code">Updating</span> section of the README.</p>
       {% endif %}
 
-      <form method="post" class="space-y-4 border-t border-slate-100 pt-4" novalidate>
+      <form method="post" class="space-y-4 border-t border-line pt-4" novalidate>
         {% csrf_token %}
         <input type="hidden" name="section" value="updates">
         <label class="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" name="update_check_enabled" class="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+          <input type="checkbox" name="update_check_enabled" class="mt-1 h-4 w-4 rounded border-line-strong text-brand-600 focus:ring-brand-500"
                  {% if workspace.update_check_enabled %}checked{% endif %}>
           <span>
-            <span class="block text-sm font-medium text-slate-900">Check for updates</span>
-            <span class="block text-xs text-slate-500">Once a day, fetch the latest release tag from GitHub. Read-only — no usage data is sent.</span>
+            <span class="block text-sm font-medium text-ink">Check for updates</span>
+            <span class="block text-xs text-muted">Once a day, fetch the latest release tag from GitHub. Read-only — no usage data is sent.</span>
           </span>
         </label>
         <div class="flex justify-end gap-3">
@@ -102,26 +112,26 @@
   <section class="card" x-data="{ open: {{ google_form.enabled.value|default_if_none:False|yesno:'true,false' }} }">
     <div class="card-header">
       <div>
-        <h2 class="text-sm font-semibold text-slate-900">Sign in with Google</h2>
-        <p class="text-xs text-slate-500">Allow teammates to sign in using their Google account.</p>
+        <h2 class="section-title">Sign in with Google</h2>
+        <p class="text-xs text-muted">Allow teammates to sign in using their Google account.</p>
       </div>
       <span class="{% if workspace.google_oauth_enabled %}badge-green{% else %}badge-slate{% endif %}">
-        {% if workspace.google_oauth_enabled %}Enabled{% else %}Disabled{% endif %}
+        {% if workspace.google_oauth_enabled %}<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Enabled{% else %}Disabled{% endif %}
       </span>
     </div>
     <form method="post" class="card-body space-y-5" novalidate>
       {% csrf_token %}
       <input type="hidden" name="section" value="google">
       <label class="flex items-start gap-3 cursor-pointer">
-        <input type="checkbox" name="google-enabled" class="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+        <input type="checkbox" name="google-enabled" class="mt-1 h-4 w-4 rounded border-line-strong text-brand-600 focus:ring-brand-500"
                {% if workspace.google_oauth_enabled %}checked{% endif %}
                x-model="open">
         <span>
-          <span class="block text-sm font-medium text-slate-900">Enable Google sign-in</span>
-          <span class="block text-xs text-slate-500">Adds a "Sign in with Google" button on the login page.</span>
+          <span class="block text-sm font-medium text-ink">Enable Google sign-in</span>
+          <span class="block text-xs text-muted">Adds a "Sign in with Google" button on the login page.</span>
         </span>
       </label>
-      <div x-show="open" x-cloak class="space-y-4 border-t border-slate-100 pt-4">
+      <div x-show="open" x-cloak class="space-y-4 border-t border-line pt-4">
         <div>
           <label class="label" for="id_google-client_id">Google OAuth Client ID</label>
           <input class="input font-mono text-xs" name="google-client_id" id="id_google-client_id"
@@ -133,7 +143,7 @@
           <label class="label" for="id_google-client_secret">Google OAuth Client Secret</label>
           <input class="input font-mono text-xs" type="password" name="google-client_secret" id="id_google-client_secret"
                  placeholder="{% if has_google_secret %}•••••••••••• (leave blank to keep current){% else %}GOCSPX-...{% endif %}">
-          <p class="mt-1 text-xs text-slate-500">Stored encrypted with Fernet. Leave blank to keep the existing secret.</p>
+          <p class="help">Stored encrypted with Fernet. Leave blank to keep the existing secret.</p>
         </div>
       </div>
       <div class="flex justify-end">

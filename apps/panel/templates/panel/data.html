@@ -1,0 +1,129 @@
+{% extends "panel/base.html" %}
+{% block title %}Data & storage{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">Data &amp; storage</span>{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <header class="flex items-end justify-between">
+    <div>
+      <h1 class="page-title">Data &amp; storage</h1>
+      <p class="page-subtitle">What this relay is holding, and the retention purge that keeps it in check.</p>
+    </div>
+    <span class="{% if retention_enabled %}badge-green{% else %}badge-yellow{% endif %}">
+      {% if retention_enabled %}<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Auto purge on · {{ retention_days }}d{% else %}Auto purge off{% endif %}
+    </span>
+  </header>
+
+  <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="card card-body">
+      <div class="eyebrow">Messages</div>
+      <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ stats.total_messages }}</div>
+      <div class="mt-1 text-xs text-faint">{% if stats.oldest_message_at %}oldest {{ stats.oldest_message_at|date:"M j, Y" }}{% else %}none yet{% endif %}</div>
+    </div>
+    <div class="card card-body">
+      <div class="eyebrow">Bodies stored</div>
+      <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ stats.bodies_stored }}</div>
+      <div class="mt-1 text-xs text-faint">{{ stats.bodies_purged }} already purged</div>
+    </div>
+    <div class="card card-body">
+      <div class="eyebrow">Pending purge</div>
+      <div class="mt-2 font-mono text-3xl font-semibold tracking-tight tnum {% if stats.pending_purge %}text-amber-600 dark:text-amber-400{% else %}text-ink{% endif %}">{{ stats.pending_purge }}</div>
+      <div class="mt-1 text-xs text-faint">past the retention window</div>
+    </div>
+    <div class="card card-body">
+      <div class="eyebrow">Attachments</div>
+      <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ stats.attachments }}</div>
+      <div class="mt-1 text-xs text-faint">≈ {{ stats.attachment_bytes|filesizeformat }}</div>
+    </div>
+    <div class="card card-body">
+      <div class="eyebrow">Events</div>
+      <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ stats.events }}</div>
+      <div class="mt-1 text-xs text-faint">kept forever (metadata only)</div>
+    </div>
+    <div class="card card-body">
+      <div class="eyebrow">Captured (test)</div>
+      <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ stats.captured }}</div>
+      <div class="mt-1 text-xs text-faint">test-inbox messages</div>
+    </div>
+    <div class="card card-body">
+      <div class="eyebrow">Idempotency records</div>
+      <div class="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink tnum">{{ stats.idempotency_records }}</div>
+      <div class="mt-1 text-xs text-faint">24h replay cache</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="section-title">Purge</h2>
+        <p class="text-xs text-muted">Purging clears message bodies and attachments. Message metadata and events are always kept. Configure the automatic daily purge in <a href="{% url 'panel:settings' %}" class="font-medium text-brand-600 hover:underline">Settings</a>.</p>
+      </div>
+    </div>
+    <div class="card-body flex flex-wrap items-end gap-6">
+      <form method="post" action="{% url 'panel:data_purge_now' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary" {% if not stats.pending_purge %}title="Nothing is past the retention window"{% endif %}>
+          Run purge now{% if stats.pending_purge %} ({{ stats.pending_purge }}){% endif %}
+        </button>
+      </form>
+      <form method="post" action="{% url 'panel:data_purge_older' %}" class="flex items-end gap-3"
+            onsubmit="return confirm('Purge bodies of all messages older than ' + this.days.value + ' days? This cannot be undone.');">
+        {% csrf_token %}
+        <div>
+          <label class="label" for="id_days">Purge bodies older than (days)</label>
+          <input class="input w-40" type="number" min="1" max="3650" name="days" id="id_days" placeholder="e.g. 90" required>
+        </div>
+        <button type="submit" class="btn-secondary">Purge older</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2 class="section-title">Purge history</h2>
+    </div>
+    {% if runs %}
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr><th>When</th><th>Trigger</th><th>By</th><th class="text-right">Bodies</th><th class="text-right">Attachments</th><th class="text-right">Idempotency</th></tr>
+          </thead>
+          <tbody>
+            {% for run in runs %}
+              <tr>
+                <td class="font-mono text-xs tnum">{{ run.started_at|date:"M j, Y H:i" }}</td>
+                <td>{% if run.trigger == 'manual' %}<span class="badge-slate">manual</span>{% else %}<span class="badge-green">scheduled</span>{% endif %}</td>
+                <td class="text-xs text-muted">{{ run.created_by|default:"—" }}</td>
+                <td class="text-right font-mono text-xs tnum">{{ run.messages_purged }}</td>
+                <td class="text-right font-mono text-xs tnum">{{ run.attachments_purged }}</td>
+                <td class="text-right font-mono text-xs tnum">{{ run.idempotency_purged }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="card-body text-sm text-faint">No purge has run yet.</div>
+    {% endif %}
+  </section>
+
+  <section class="card border-red-200 dark:border-red-900/50">
+    <div class="card-header">
+      <div>
+        <h2 class="section-title text-red-700 dark:text-red-400">Danger zone</h2>
+        <p class="text-xs text-muted">Deletes rows outright — not just bodies.</p>
+      </div>
+    </div>
+    <div class="card-body flex items-center justify-between gap-4">
+      <div>
+        <div class="text-sm font-medium text-ink">Delete all captured test messages</div>
+        <div class="text-xs text-muted">Removes every Test Inbox message ({{ stats.captured }}) including attachments and simulated events. Live messages are never touched.</div>
+      </div>
+      <form method="post" action="{% url 'panel:data_delete_captured' %}"
+            onsubmit="return confirm('Delete all {{ stats.captured }} captured test messages? This cannot be undone.');">
+        {% csrf_token %}
+        <button type="submit" class="btn-danger" {% if not stats.captured %}disabled{% endif %}>Delete captured</button>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

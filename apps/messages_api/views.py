@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime, timedelta, timezone as dt_timezone
 
 from django.db import IntegrityError, transaction
 from django.http import HttpRequest, JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
@@ -22,6 +24,10 @@ from apps.messages_api.serializers import (
 from apps.suppressions.models import Suppression
 
 log = logging.getLogger(__name__)
+
+# Resend allows scheduling up to 30 days ahead; we mirror that so a typo'd year
+# doesn't park a message in the scheduler until 2050.
+MAX_SCHEDULE_AHEAD = timedelta(days=30)
 
 
 def _error(message: str, *, status: int, name: str = "validation_error") -> JsonResponse:
@@ -69,6 +75,24 @@ def emails_create(request: HttpRequest) -> JsonResponse:
             status=400,
             name="no_pool_assigned",
         )
+
+    # Scheduled sends: a future timestamp defers dispatch via a one-shot Q2
+    # schedule; a past/now timestamp sends immediately (Resend semantics).
+    scheduled_dt = None
+    dispatch_at = None
+    if clean["scheduled_at"]:
+        scheduled_dt = datetime.fromisoformat(clean["scheduled_at"].replace("Z", "+00:00"))
+        if scheduled_dt.tzinfo is None:
+            scheduled_dt = scheduled_dt.replace(tzinfo=dt_timezone.utc)
+        now = timezone.now()
+        if scheduled_dt > now + MAX_SCHEDULE_AHEAD:
+            return _error(
+                "scheduled_at is too far in the future (max 30 days).",
+                status=422,
+                name="validation_error",
+            )
+        if scheduled_dt > now:
+            dispatch_at = scheduled_dt
 
     # Filter suppressed recipients. If *all* recipients are suppressed,
     # refuse the send up front rather than queueing a no-op. Capture (test) pools
@@ -130,12 +154,9 @@ def emails_create(request: HttpRequest) -> JsonResponse:
             idempotency_fingerprint=fingerprint,
         )
         message.set_body(html=clean["html"], text=clean["text"])
-        if clean["scheduled_at"]:
-            from datetime import datetime
-
-            message.scheduled_at = datetime.fromisoformat(
-                clean["scheduled_at"].replace("Z", "+00:00")
-            )
+        if scheduled_dt:
+            message.scheduled_at = scheduled_dt
+        if dispatch_at:
             message.status = Message.STATUS_SCHEDULED
         message.set_retention(workspace.retention_days)
         message.save()
@@ -159,14 +180,29 @@ def emails_create(request: HttpRequest) -> JsonResponse:
                 transaction.set_rollback(True)
                 return JsonResponse({"id": existing.message.id}, status=200)
 
+        if dispatch_at and not pool.is_capture:
+            # One-shot Q2 schedule fires send_message at the requested time.
+            # Created inside the transaction so a failure rolls the Message back
+            # instead of stranding it in `scheduled` with nothing to dispatch it.
+            from django_q.models import Schedule
+            from django_q.tasks import schedule as q_schedule
+
+            q_schedule(
+                "apps.sending.tasks.send_message",
+                str(message.id),
+                name=f"scheduled-send-{message.id}",
+                schedule_type=Schedule.ONCE,
+                next_run=dispatch_at,
+            )
+
     if pool.is_capture:
         # Test-mode send: store + display, never dispatch. Runs synchronously so
-        # the email lands in the Test Inbox immediately (no Q2 worker needed).
+        # the email lands in the Test Inbox immediately (no Q2 worker needed) —
+        # scheduled_at included: the whole point of the test inbox is instant feedback.
         from apps.sending.tasks import capture_message
 
         capture_message(message)
     elif message.status == Message.STATUS_QUEUED:
-        # Enqueue unless scheduled — schedule handling lives in v2.
         try:
             from apps.sending.tasks import enqueue_message
 

@@ -3,7 +3,9 @@
 #
 # Modes:
 #   web     — apply migrations + collectstatic, then run gunicorn.
-#   worker  — apply migrations (no-op if web ran first), then run the Q2 cluster.
+#   worker  — run the Q2 cluster. Does NOT migrate: compose starts the worker
+#             only after web is healthy (= migrations done), so a single
+#             process owns schema changes and there is no concurrent-migrate race.
 #   migrate — run migrations and exit (handy for one-shot jobs / k8s init).
 #   shell   — drop into manage.py shell (interactive).
 
@@ -33,7 +35,6 @@ case "$cmd" in
             --error-logfile -
         ;;
     worker)
-        run_migrations
         exec python manage.py qcluster
         ;;
     migrate)

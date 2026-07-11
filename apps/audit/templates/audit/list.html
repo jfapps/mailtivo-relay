@@ -1,11 +1,11 @@
 {% extends "panel/base.html" %}
 {% block title %}Audit log{% endblock %}
-{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Audit log</span>{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">Audit log</span>{% endblock %}
 {% block content %}
 <div class="space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Audit log</h1>
-    <p class="mt-1 text-sm text-slate-500">Every admin action — key issuance, connection edits, pool weight changes, suppression edits, settings, and webhook ops.</p>
+    <h1 class="page-title">Audit log</h1>
+    <p class="page-subtitle">Every admin action — key issuance, connection edits, pool weight changes, suppression edits, settings, and webhook ops.</p>
   </header>
 
   <form class="flex items-end gap-2" method="get">
@@ -16,33 +16,41 @@
     <button class="btn-secondary">Apply</button>
   </form>
 
-  <section class="card">
+  <section class="card overflow-hidden">
     {% if page.object_list %}
-      <table class="data-table">
-        <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead>
-        <tbody>
-          {% for a in page.object_list %}
-            <tr>
-              <td class="text-xs text-slate-500">{{ a.created_at|date:"M j, H:i:s" }}</td>
-              <td class="text-xs text-slate-700">{{ a.actor_email|default:"system" }}</td>
-              <td><span class="badge-slate">{{ a.action }}</span></td>
-              <td class="text-xs text-slate-700">{{ a.target|default:"—" }}</td>
-              <td class="text-xs text-slate-500"><code class="code">{{ a.detail|default:"" }}</code></td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead>
+          <tbody>
+            {% for a in page.object_list %}
+              <tr>
+                <td class="whitespace-nowrap font-mono text-xs text-muted tnum">{{ a.created_at|date:"M j, H:i:s" }}</td>
+                <td class="font-mono text-xs text-ink">{{ a.actor_email|default:"system" }}</td>
+                <td><span class="badge-slate">{{ a.action }}</span></td>
+                <td class="font-mono text-xs text-ink">{{ a.target|default:"—" }}</td>
+                <td class="text-xs text-muted"><code class="code">{{ a.detail|default:"" }}</code></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
       {% if page.paginator.num_pages > 1 %}
-        <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
-          <span>Page {{ page.number }} / {{ page.paginator.num_pages }}</span>
+        <div class="flex items-center justify-between border-t border-line px-5 py-3 text-xs text-muted">
+          <span class="tnum">Page {{ page.number }} / {{ page.paginator.num_pages }}</span>
           <div class="flex gap-2">
-            {% if page.has_previous %}<a class="btn-ghost text-xs" href="?{% if action %}action={{ action }}&{% endif %}page={{ page.previous_page_number }}">← Prev</a>{% endif %}
-            {% if page.has_next %}<a class="btn-ghost text-xs" href="?{% if action %}action={{ action }}&{% endif %}page={{ page.next_page_number }}">Next →</a>{% endif %}
+            {% if page.has_previous %}<a class="btn-ghost btn-sm" href="?{% if action %}action={{ action }}&{% endif %}page={{ page.previous_page_number }}">← Prev</a>{% endif %}
+            {% if page.has_next %}<a class="btn-ghost btn-sm" href="?{% if action %}action={{ action }}&{% endif %}page={{ page.next_page_number }}">Next →</a>{% endif %}
           </div>
         </div>
       {% endif %}
     {% else %}
-      <div class="card-body py-12 text-center text-sm text-slate-500">No audit entries yet.</div>
+      <div class="card-body py-14 text-center">
+        <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-faint">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <p class="mt-3 text-sm font-medium text-ink">No audit entries yet</p>
+        <p class="mt-1 text-sm text-muted">Admin actions like key issuance, connection edits, and settings changes will appear here.</p>
+      </div>
     {% endif %}
   </section>
 </div>

@@ -1,18 +1,18 @@
 {% extends "panel/base.html" %}
 {% block title %}Team{% endblock %}
-{% block topbar_breadcrumb %}<span class="text-slate-300">/</span><span class="text-sm font-medium text-slate-700">Team</span>{% endblock %}
+{% block topbar_breadcrumb %}<span class="text-faint">/</span><span class="text-sm font-medium text-ink">Team</span>{% endblock %}
 {% block content %}
 <div class="space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Team</h1>
-    <p class="mt-1 text-sm text-slate-500">Members can sign in to this workspace. Admins can also change settings.</p>
+    <h1 class="page-title">Team</h1>
+    <p class="page-subtitle">Members can sign in to this workspace. Admins can also change settings.</p>
   </header>
 
   <section class="card">
     <div class="card-header">
       <div>
-        <h2 class="text-sm font-semibold text-slate-900">Invite a teammate</h2>
-        <p class="text-xs text-slate-500">They'll get a sign-up link valid for 7 days.</p>
+        <h2 class="section-title">Invite a teammate</h2>
+        <p class="text-xs text-muted">They'll get a sign-up link valid for 7 days.</p>
       </div>
     </div>
     <form method="post" class="card-body grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto] md:items-end" novalidate>
@@ -22,77 +22,91 @@
         <input class="input" type="email" name="email" id="id_email" value="{{ form.email.value|default_if_none:'' }}" required>
         {% if form.email.errors %}<div class="field-error">{{ form.email.errors|join:" " }}</div>{% endif %}
       </div>
-      <label class="inline-flex items-center gap-2 self-center text-sm text-slate-700">
-        <input type="checkbox" name="is_admin" class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+      <label class="inline-flex items-center gap-2 self-center text-sm text-ink">
+        <input type="checkbox" name="is_admin" class="h-4 w-4 rounded border-line-strong text-brand-600 focus:ring-brand-500">
         Admin
       </label>
       <button type="submit" class="btn-primary">Send invite</button>
     </form>
   </section>
 
-  <section class="card">
+  <section class="card overflow-hidden">
     <div class="card-header">
-      <h2 class="text-sm font-semibold text-slate-900">Members</h2>
-      <span class="text-xs text-slate-500">{{ members|length }} active</span>
+      <h2 class="section-title">Members</h2>
+      <span class="text-xs text-muted tnum">{{ members|length }} active</span>
     </div>
-    <table class="data-table">
-      <thead><tr><th>Email</th><th>Role</th><th>Last login</th><th class="text-right">Actions</th></tr></thead>
-      <tbody>
-        {% for member in members %}
-          <tr>
-            <td>
-              <div class="flex items-center gap-3">
-                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">{{ member.get_short_name|slice:":1"|upper }}</span>
-                <div>
-                  <div class="font-medium text-slate-900">{{ member.email }}</div>
-                  {% if member.display_name %}<div class="text-xs text-slate-500">{{ member.display_name }}</div>{% endif %}
-                </div>
-              </div>
-            </td>
-            <td>
-              {% if member.is_workspace_admin %}<span class="badge-green">Admin</span>{% else %}<span class="badge-slate">Member</span>{% endif %}
-            </td>
-            <td class="text-xs text-slate-500">{{ member.last_login|default:"—"|date:"M j, Y H:i" }}</td>
-            <td class="text-right">
-              {% if member.id != request.user.id %}
-                <form method="post" action="{% url 'panel:member_remove' member.id %}" class="inline" onsubmit="return confirm('Remove {{ member.email }}? They will no longer be able to sign in.')">
-                  {% csrf_token %}
-                  <button type="submit" class="btn-ghost text-xs text-red-600 hover:bg-red-50">Remove</button>
-                </form>
-              {% else %}
-                <span class="text-xs text-slate-400">You</span>
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </section>
-
-  {% if pending %}
-    <section class="card">
-      <div class="card-header">
-        <h2 class="text-sm font-semibold text-slate-900">Pending invitations</h2>
-        <span class="text-xs text-slate-500">{{ pending|length }}</span>
-      </div>
+    <div class="overflow-x-auto">
       <table class="data-table">
-        <thead><tr><th>Email</th><th>Role</th><th>Expires</th><th class="text-right">Actions</th></tr></thead>
+        <thead><tr><th>Email</th><th>Role</th><th>Last login</th><th class="text-right">Actions</th></tr></thead>
         <tbody>
-          {% for inv in pending %}
+          {% for member in members %}
             <tr>
-              <td class="font-medium text-slate-900">{{ inv.email }}</td>
-              <td>{% if inv.is_admin %}<span class="badge-green">Admin</span>{% else %}<span class="badge-slate">Member</span>{% endif %}</td>
-              <td class="text-xs text-slate-500">{{ inv.expires_at|date:"M j, Y H:i" }}</td>
-              <td class="text-right">
-                <form method="post" action="{% url 'panel:invitation_revoke' inv.id %}" class="inline">
-                  {% csrf_token %}
-                  <button type="submit" class="btn-ghost text-xs text-red-600 hover:bg-red-50">Revoke</button>
-                </form>
+              <td>
+                <div class="flex items-center gap-3">
+                  <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">{{ member.get_short_name|slice:":1"|upper }}</span>
+                  <div>
+                    <div class="font-mono text-xs font-medium text-ink">{{ member.email }}</div>
+                    {% if member.display_name %}<div class="text-xs text-muted">{{ member.display_name }}</div>{% endif %}
+                  </div>
+                </div>
+              </td>
+              <td>
+                {% if member.is_workspace_admin %}<span class="badge-green"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Admin</span>{% else %}<span class="badge-slate">Member</span>{% endif %}
+              </td>
+              <td class="whitespace-nowrap font-mono text-xs text-muted tnum">{{ member.last_login|default:"—"|date:"M j, Y H:i" }}</td>
+              <td class="whitespace-nowrap text-right">
+                {% if member.id != request.user.id %}
+                  <form method="post" action="{% url 'panel:member_remove' member.id %}" class="inline" onsubmit="return confirm('Remove {{ member.email }}? They will no longer be able to sign in.')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-ghost btn-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10">Remove</button>
+                  </form>
+                {% else %}
+                  <span class="text-xs text-faint">You</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="py-14 text-center">
+                <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-faint">
+                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <p class="mt-3 text-sm font-medium text-ink">No members yet</p>
+                <p class="mt-1 text-sm text-muted">Invite a teammate above to give them access to this workspace.</p>
               </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </section>
+
+  {% if pending %}
+    <section class="card overflow-hidden">
+      <div class="card-header">
+        <h2 class="section-title">Pending invitations</h2>
+        <span class="text-xs text-muted tnum">{{ pending|length }}</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>Email</th><th>Role</th><th>Expires</th><th class="text-right">Actions</th></tr></thead>
+          <tbody>
+            {% for inv in pending %}
+              <tr>
+                <td class="font-mono text-xs font-medium text-ink">{{ inv.email }}</td>
+                <td>{% if inv.is_admin %}<span class="badge-green"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Admin</span>{% else %}<span class="badge-slate">Member</span>{% endif %}</td>
+                <td class="whitespace-nowrap font-mono text-xs text-muted tnum">{{ inv.expires_at|date:"M j, Y H:i" }}</td>
+                <td class="whitespace-nowrap text-right">
+                  <form method="post" action="{% url 'panel:invitation_revoke' inv.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-ghost btn-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10">Revoke</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </section>
   {% endif %}
 </div>

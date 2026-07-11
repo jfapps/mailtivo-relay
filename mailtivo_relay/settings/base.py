@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.sending",
     "apps.audit",
     "apps.tools",
+    "apps.spam_analysis",
 ]
 
 MIDDLEWARE = [

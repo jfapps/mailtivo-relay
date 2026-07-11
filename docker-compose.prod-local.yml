@@ -1,0 +1,9 @@
+# Prod-parity local overlay — used by scripts/prod-local.sh.
+# Runs the production stack (gunicorn + settings.prod) exactly like a hosted
+# deploy, but publishes the web port so you can reach it at localhost. The base
+# compose intentionally does NOT publish a host port (hosted deploys sit behind
+# a reverse proxy), so this overlay adds it back for local access only.
+services:
+  web:
+    ports:
+      - "${WEB_PORT:-8000}:8000"

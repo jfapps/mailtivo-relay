@@ -45,10 +45,13 @@ die()   { printf '\033[31m[prod-local]\033[0m %s\n' "$*" >&2; exit 1; }
 
 # ── docker compose detection ──────────────────────────────────────────────────
 detect_compose() {
+    # Prod-parity, plus the prod-local overlay that publishes the web port for
+    # localhost access (the base compose only exposes it, for hosted proxies).
+    local files=(-f docker-compose.yml -f docker-compose.prod-local.yml)
     if docker compose version >/dev/null 2>&1; then
-        COMPOSE=(docker compose)
+        COMPOSE=(docker compose "${files[@]}")
     elif command -v docker-compose >/dev/null 2>&1; then
-        COMPOSE=(docker-compose)
+        COMPOSE=(docker-compose "${files[@]}")
     else
         die "Docker Compose not found. Install Docker Desktop / the compose plugin."
     fi

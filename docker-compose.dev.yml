@@ -6,6 +6,11 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: mailtivo_relay.settings.dev
       DJANGO_DEBUG: "True"
+    # Publish the port for direct localhost access during local dev. The base
+    # compose only `expose`s it (proxy-only) so hosted deploys don't bind a host
+    # port; the overlays are where a host publish belongs.
+    ports:
+      - "${WEB_PORT:-8000}:8000"
     volumes:
       - .:/app
   worker:

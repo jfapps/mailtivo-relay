@@ -25,8 +25,14 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-mailtivo}:${POSTGRES_PASSWORD:-mailtivo}@postgres:5432/${POSTGRES_DB:-mailtivo_relay}
       DJANGO_SETTINGS_MODULE: mailtivo_relay.settings.prod
-    ports:
-      - "${WEB_PORT:-8000}:8000"
+    # No host port publish here: behind Coolify / Traefik (or any reverse proxy)
+    # the container is reached over the internal Docker network on the exposed
+    # port, so binding 8000 on the host is unnecessary and collides with anything
+    # else already using it ("port is already allocated"). `expose` advertises
+    # the port to the proxy without publishing it. The dev and prod-local
+    # overlays add `ports` back for direct localhost access.
+    expose:
+      - "8000"
     volumes:
       - media:/app/media
       - static:/app/staticfiles

@@ -36,8 +36,8 @@ jobs:
       - name: Security (bandit)
         run: bandit -q -r apps mailtivo_relay
       - name: Test (pytest)
-        env:
-          RELAY_FERNET_KEY: ***REMOVED***
+        # The test settings module mints an ephemeral RELAY_FERNET_KEY at import
+        # time, so none needs to be supplied here.
         run: pytest apps -q
       - name: Dependency audit (pip-audit)
         run: pip-audit -r requirements.txt --strict

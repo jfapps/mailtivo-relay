@@ -28,6 +28,9 @@ staticfiles/
 Thumbs.db
 *.swp
 
+# Claude Code (local agent config)
+.claude/
+
 # Tooling
 .coverage
 .coverage.*
@@ -41,3 +44,5 @@ coverage.xml
 # Node (Tailwind/theme)
 node_modules/
 theme/static_src/node_modules/
+
+

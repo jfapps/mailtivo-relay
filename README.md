@@ -8,7 +8,7 @@ Built for solo builders and small teams who want one polished sending surface
 on top of any provider. Drop-in compatible with the Resend SDK — point its
 `base_url` at your relay and keep shipping.
 
-[![CI](https://github.com/your-org/mailtivo-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/mailtivo-relay/actions/workflows/ci.yml)
+[![CI](https://github.com/hassancs91/mailtivo-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/hassancs91/mailtivo-relay/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## Why
@@ -24,7 +24,7 @@ on top of any provider. Drop-in compatible with the Resend SDK — point its
 ## Quickstart (docker-compose, < 5 minutes)
 
 ```bash
-git clone https://github.com/your-org/mailtivo-relay
+git clone https://github.com/hassancs91/mailtivo-relay
 cd mailtivo-relay
 cp .env.example .env
 

@@ -153,7 +153,7 @@ RELAY_FERNET_KEY_OLD = config("RELAY_FERNET_KEY_OLD", default="")  # for rotatio
 MAGIC_LINK_TTL_MINUTES = config("MAGIC_LINK_TTL_MINUTES", default=15, cast=int)
 
 # GitHub repo (owner/name) used by the opt-in update check. Override for forks.
-GITHUB_REPO = config("RELAY_GITHUB_REPO", default="your-org/mailtivo-relay")
+GITHUB_REPO = config("RELAY_GITHUB_REPO", default="hassancs91/mailtivo-relay")
 
 # Django-Q2 — ORM broker by default so solo self-hosters need no Redis.
 Q_CLUSTER = {

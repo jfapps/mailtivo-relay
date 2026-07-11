@@ -31,6 +31,9 @@ Thumbs.db
 # Claude Code (local agent config)
 .claude/
 
+# Internal scratch notes (not for the public repo)
+notes.md
+
 # Tooling
 .coverage
 .coverage.*
@@ -44,5 +47,6 @@ coverage.xml
 # Node (Tailwind/theme)
 node_modules/
 theme/static_src/node_modules/
+
 
 

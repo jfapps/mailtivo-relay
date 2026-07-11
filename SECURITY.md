@@ -26,7 +26,10 @@ support the latest minor release and the previous one for security patches.
   the `Connection` row.
 - **Inbound webhooks** are signature-verified before any side effects:
   Postal via RSA-PKCS1v15 (SHA-256 preferred, SHA-1 legacy fallback),
-  Resend via Svix HMAC-SHA256.
+  Resend via Svix HMAC-SHA256, SES via the SNS message X.509 signature
+  (with the signing-cert URL constrained to `sns.<region>.amazonaws.com`).
+  Each SES connection is additionally pinned to a single SNS topic ARN, so a
+  validly-signed message from any other topic is rejected.
 - **Outbound webhooks** are signed with HMAC-SHA256 over `{t}.{body}` and
   carry `Mailtivo-Signature: t=<unix>,v1=<hex>`. The signing secret can be
   rotated from the panel.
@@ -37,6 +40,41 @@ support the latest minor release and the previous one for security patches.
   set on every panel response.
 - **HSTS, SSL redirect, secure cookies, X-Frame-Options=DENY** are enabled in
   the `prod` settings module.
+
+## Rotating the encryption key
+
+`RELAY_FERNET_KEY` encrypts provider credentials, webhook secrets, message
+bodies, and the AI/Safe-Browsing keys. To rotate it without downtime or data
+loss:
+
+1. Mint a new key:
+   `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+2. Set the **new** key as `RELAY_FERNET_KEY` and move the **current** key to
+   `RELAY_FERNET_KEY_OLD`, then redeploy. New writes use the new key;
+   `MultiFernet` still decrypts anything encrypted with the old key.
+3. Re-encrypt existing rows so the old key can be retired. There is no
+   built-in re-encryption command yet, so run a one-off in the app shell —
+   load each row holding a `*_encrypted` field, call `set`/`encrypt` with the
+   already-decrypted value, and save. Track this in the issue tracker if you
+   need it automated.
+4. Once every row is re-encrypted, remove `RELAY_FERNET_KEY_OLD` and redeploy.
+
+Losing `RELAY_FERNET_KEY` (with no `_OLD` fallback) makes all encrypted data
+permanently unrecoverable — back it up in your secrets manager.
+
+## Known caveats
+
+- **Google OAuth client secret** (only if you enable Google sign-in): the
+  workspace stores it Fernet-encrypted, but django-allauth needs the cleartext
+  to perform the OAuth exchange and keeps its own **unencrypted** copy in the
+  `socialaccount_socialapp` table. A database-only compromise would therefore
+  expose the Google OAuth secret (this does *not* affect the email-provider
+  credentials, which are never written in cleartext). Keep the database on a
+  private network, and rotate the secret in Google Cloud if the DB is exposed.
+- **Provider credentials in `DEBUG`**: never run production with `DEBUG=True`.
+  The technical 500 page can render decrypted values held in local variables.
+  The `prod` settings module forces `DEBUG=False` and refuses to boot without
+  `DJANGO_SECRET_KEY` and `RELAY_FERNET_KEY` set, specifically to prevent this.
 
 ## Threat model assumptions
 

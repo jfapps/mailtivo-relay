@@ -130,6 +130,7 @@ handler end-to-end. Simulated events are flagged `"test": true` in the payload a
 - **Fernet-encrypted body storage** with per-workspace retention (default 30 days) and a **Data & storage** page (manual purge, purge history, storage stats)
 - **Audit log** for every admin action
 - **Domain identity / BIMI readiness** — read-only SPF, DKIM, DMARC and BIMI diagnostics with plain-language next steps
+- **Real delivery proof** — paste delivered-message headers to verify SPF/DKIM/DMARC alignment; raw headers are not retained
 - **Custom panel** at `/app/...` — Django templates + HTMX + Tailwind + Alpine
 
 Not in v1: `/domains`, `/contacts`, `/audiences`, `/broadcasts`, multi-workspace

@@ -25,6 +25,7 @@ urlpatterns = [
     path("app/tools/", include("apps.tools.urls")),
     path("app/integrations/", include("apps.spam_analysis.urls")),
     path("app/audit/", include("apps.audit.urls")),
+    path("app/domain-trust/", include("apps.domain_trust.urls")),
     path("api/v1/", include("apps.messages_api.urls")),
     path("webhooks/", include("apps.events.urls")),
     path("accounts/", include("allauth.urls")),

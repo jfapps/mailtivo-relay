@@ -73,7 +73,7 @@ def _pick_weighted(members: list[PoolMember]) -> PoolMember:
         return members[0]
     r = random.uniform(0, total)
     upto = 0.0
-    for m, w in zip(members, weights):
+    for m, w in zip(members, weights, strict=True):
         if w == 0:
             continue
         upto += w

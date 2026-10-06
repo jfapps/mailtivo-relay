@@ -48,7 +48,7 @@ def index(request: HttpRequest) -> HttpResponse:
 def refresh(request: HttpRequest, pk: int) -> HttpResponse:
     identity = get_object_or_404(DomainIdentity, pk=pk)
     try:
-        identity.latest_state = inspect_domain(identity.domain, identity.dkim_selector)
+        identity.latest_state = inspect_domain(identity.domain, identity.dkim_selector, identity.certificate_type)
         identity.last_checked_at = timezone.now()
         identity.save(update_fields=["latest_state", "last_checked_at", "updated_at"])
     except Exception as exc:
@@ -60,7 +60,8 @@ def refresh(request: HttpRequest, pk: int) -> HttpResponse:
         target=identity.domain,
         detail={
             "bimi_infrastructure_ready": identity.latest_state.get("bimi_infrastructure_ready", False),
-            "gmail_bimi_candidate": identity.latest_state.get("gmail_bimi_candidate", False),
+            "gmail_logo_candidate": identity.latest_state.get("gmail_logo_candidate", False),
+            "gmail_verified_check_candidate": identity.latest_state.get("gmail_verified_check_candidate", False),
         },
     )
     messages.success(request, f"DNS status refreshed for {identity.domain}.")

@@ -31,10 +31,11 @@ class InspectDomainTests(SimpleTestCase):
         state = inspect_domain("example.com", "s1")
         self.assertEqual(state["dmarc"]["status"], "monitoring")
         self.assertFalse(state["bimi_infrastructure_ready"])
-        self.assertFalse(state["gmail_bimi_candidate"])
+        self.assertFalse(state["gmail_logo_candidate"])
+        self.assertFalse(state["gmail_verified_check_candidate"])
 
     @patch("apps.domain_trust.services.requests.get")
-    def test_enforced_auth_and_bimi_authority_is_candidate(self, get):
+    def test_enforced_auth_and_bimi_authority_with_cmc_is_logo_only(self, get):
         answers = {
             "example.com": ["v=spf1 include:_spf.example.net -all"],
             "_dmarc.example.com": ["v=DMARC1; p=quarantine; pct=100"],
@@ -48,12 +49,33 @@ class InspectDomainTests(SimpleTestCase):
             return _response(answers.get(params["name"], []))
 
         get.side_effect = side_effect
-        state = inspect_domain("example.com", "s1")
+        state = inspect_domain("example.com", "s1", "cmc")
         self.assertEqual(state["dkim"]["status"], "published")
         self.assertEqual(state["dmarc"]["status"], "protected")
         self.assertTrue(state["bimi_infrastructure_ready"])
-        self.assertTrue(state["gmail_bimi_candidate"])
+        self.assertTrue(state["gmail_logo_candidate"])
+        self.assertFalse(state["gmail_verified_check_candidate"])
         self.assertEqual(
             state["bimi_authority"],
             "https://example.com/.well-known/bimi/mark.pem",
         )
+
+
+    @patch("apps.domain_trust.services.requests.get")
+    def test_vmc_is_required_for_gmail_verified_check_candidate(self, get):
+        answers = {
+            "example.com": ["v=spf1 include:_spf.example.net -all"],
+            "_dmarc.example.com": ["v=DMARC1; p=reject; pct=100"],
+            "s1._domainkey.example.com": ["v=DKIM1; k=rsa; p=abc123"],
+            "default._bimi.example.com": [
+                "v=BIMI1; l=; a=https://example.com/.well-known/bimi/mark.pem"
+            ],
+        }
+
+        def side_effect(_url, *, params, **_kwargs):
+            return _response(answers.get(params["name"], []))
+
+        get.side_effect = side_effect
+        state = inspect_domain("example.com", "s1", "vmc")
+        self.assertTrue(state["gmail_logo_candidate"])
+        self.assertTrue(state["gmail_verified_check_candidate"])

@@ -33,12 +33,14 @@ def _sync_google_social_app(ws: WorkspaceSettings) -> None:
         SocialApp.objects.filter(provider="google").delete()
         return
     site = Site.objects.get(pk=1)
-    secret = ""  # nosec B105 - optional decrypted setting starts empty
+    # Optional decrypted setting starts empty; not a credential literal.
+    secret = ""  # nosec B105
     if ws.google_oauth_client_secret_encrypted:
         try:
             secret = decrypt(bytes(ws.google_oauth_client_secret_encrypted))
         except Exception:
-            secret = ""  # nosec B105 - clear optional value after failed decrypt
+            # Clear optional value after failed decrypt; not a credential literal.
+            secret = ""  # nosec B105
     app, _ = SocialApp.objects.update_or_create(
         provider="google",
         defaults={

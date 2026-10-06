@@ -26,6 +26,11 @@
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M9 5h6m-6 14h6M5 9v6m14-6v6M7 7h10v10H7z" stroke="currentColor" stroke-width="1.8"/></svg>
       Connections
     </a>
+    {% url 'domain_trust:index' as domain_trust_url %}
+    <a href="{{ domain_trust_url }}" class="sidebar-link" {% if '/app/domain-trust/' in request.path %}aria-current="page"{% endif %}>
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.6-2.8 8-7 10-4.2-2-7-5.4-7-10V6l7-3zM9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Domain identity
+    </a>
     {% url 'pools:list' as pools_url %}
     <a href="{{ pools_url }}" class="sidebar-link" {% if '/app/pools/' in request.path %}aria-current="page"{% endif %}>
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10m-10 6h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>

@@ -163,7 +163,8 @@ class PostalAdapter(BaseAdapter):
             )
 
         recipients = data.get("messages") or {}
-        first_token = ""  # nosec B105 - empty parser sentinel, not a credential
+        # Empty parser sentinel; not a credential.
+        first_token = ""  # nosec B105
         recipient_tokens: dict[str, str] = {}
         for addr, info in recipients.items():
             tok = info.get("token", "") if isinstance(info, dict) else ""
@@ -233,7 +234,8 @@ class PostalAdapter(BaseAdapter):
             except (binascii.Error, ValueError):
                 return False
             try:
-                public_key.verify(signature, body, padding.PKCS1v15(), hashes.SHA1())  # noqa: S303  # nosec B303 - Postal legacy RSA-SHA1 verification
+                # Postal v2 legacy signatures are RSA-SHA1; verification only.
+                public_key.verify(signature, body, padding.PKCS1v15(), hashes.SHA1())  # noqa: S303  # nosec B303
                 return True
             except InvalidSignature:
                 return False

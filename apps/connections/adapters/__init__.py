@@ -29,7 +29,7 @@ def get_adapter_class(provider_code: str) -> type[BaseAdapter]:
     try:
         return PROVIDERS[provider_code]
     except KeyError:
-        raise AdapterError(f"Unknown provider: {provider_code}")
+        raise AdapterError(f"Unknown provider: {provider_code}") from None
 
 
 __all__ = [

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.tools",
     "apps.spam_analysis",
+    "apps.domain_trust",
 ]
 
 MIDDLEWARE = [

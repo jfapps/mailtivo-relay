@@ -43,7 +43,7 @@ def _tags(record: str) -> dict[str, str]:
     return {m.group(1).lower(): m.group(2).strip() for m in _TAG_RE.finditer(record)}
 
 
-def inspect_domain(domain: str, dkim_selector: str = "") -> dict[str, Any]:
+def inspect_domain(domain: str, dkim_selector: str = "", certificate_type: str = "none") -> dict[str, Any]:
     root = _txt_records(domain)
     spf_records = [r for r in root if r.lower().startswith("v=spf1")]
     spf = CheckResult(
@@ -92,6 +92,10 @@ def inspect_domain(domain: str, dkim_selector: str = "") -> dict[str, Any]:
         "BIMI record published." if bimi_record else "No BIMI record found.",
     )
 
+    certificate_type = (certificate_type or "none").lower()
+    gmail_logo_candidate = bool(spf_records and dkim_ok and enforced and bimi_record and authority)
+    gmail_verified_check_candidate = bool(gmail_logo_candidate and certificate_type == "vmc")
+
     return {
         "domain": domain,
         "spf": asdict(spf),
@@ -102,5 +106,8 @@ def inspect_domain(domain: str, dkim_selector: str = "") -> dict[str, Any]:
         "dmarc_pct": pct if dmarc_record else None,
         "bimi_authority": authority or None,
         "bimi_infrastructure_ready": bool(spf_records and dkim_ok and enforced),
-        "gmail_bimi_candidate": bool(spf_records and dkim_ok and enforced and bimi_record and authority),
+        "certificate_type": certificate_type,
+        "gmail_logo_candidate": gmail_logo_candidate,
+        "gmail_verified_check_candidate": gmail_verified_check_candidate,
+        "gmail_bimi_candidate": gmail_logo_candidate,
     }

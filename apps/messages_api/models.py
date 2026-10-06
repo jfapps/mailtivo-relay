@@ -6,8 +6,8 @@ ever decrypted at send time inside the Q2 worker.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from datetime import timedelta
-from typing import Iterable
 
 from django.db import models
 from django.utils import timezone

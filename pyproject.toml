@@ -49,4 +49,4 @@ filterwarnings = ["ignore::DeprecationWarning:django.*"]
 
 [tool.bandit]
 skips = ["B101"]  # assert in tests
-exclude_dirs = ["apps/*/tests", ".venv", "staticfiles"]
+exclude_dirs = ["tests", "migrations", ".venv", "staticfiles"]

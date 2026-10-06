@@ -2,17 +2,16 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from allauth.socialaccount.models import SocialApp
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.sites.models import Site
 from django.db.models import Count
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
-
-from allauth.socialaccount.models import SocialApp
-from django.contrib.sites.models import Site
 
 from apps.accounts.models import Invitation, User, WorkspaceSettings
 from apps.audit.models import AuditLog
@@ -34,12 +33,14 @@ def _sync_google_social_app(ws: WorkspaceSettings) -> None:
         SocialApp.objects.filter(provider="google").delete()
         return
     site = Site.objects.get(pk=1)
-    secret = ""
+    # Optional decrypted setting starts empty; not a credential literal.
+    secret = ""  # nosec B105
     if ws.google_oauth_client_secret_encrypted:
         try:
             secret = decrypt(bytes(ws.google_oauth_client_secret_encrypted))
         except Exception:
-            secret = ""
+            # Clear optional value after failed decrypt; not a credential literal.
+            secret = ""  # nosec B105
     app, _ = SocialApp.objects.update_or_create(
         provider="google",
         defaults={

@@ -6,7 +6,6 @@ from email.parser import Parser
 from email.utils import parseaddr
 from typing import Any
 
-
 _RESULT_RE = re.compile(r"\b(spf|dkim|dmarc)=([a-zA-Z0-9_-]+)", re.I)
 _HEADER_FROM_RE = re.compile(r"\bheader\.from=([^;\s]+)", re.I)
 _SMTP_FROM_RE = re.compile(r"\bsmtp\.mailfrom=([^;\s]+)", re.I)

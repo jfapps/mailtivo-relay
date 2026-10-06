@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import UTC, datetime, timedelta
 
 from django.db import IntegrityError, transaction
 from django.http import HttpRequest, JsonResponse
@@ -83,7 +83,7 @@ def emails_create(request: HttpRequest) -> JsonResponse:
     if clean["scheduled_at"]:
         scheduled_dt = datetime.fromisoformat(clean["scheduled_at"].replace("Z", "+00:00"))
         if scheduled_dt.tzinfo is None:
-            scheduled_dt = scheduled_dt.replace(tzinfo=dt_timezone.utc)
+            scheduled_dt = scheduled_dt.replace(tzinfo=UTC)
         now = timezone.now()
         if scheduled_dt > now + MAX_SCHEDULE_AHEAD:
             return _error(

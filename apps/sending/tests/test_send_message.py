@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from apps.connections.adapters import AdapterError, AdapterResult, PERMANENT_FAILURE, TEMPORARY_FAILURE
+from apps.connections.adapters import PERMANENT_FAILURE, TEMPORARY_FAILURE, AdapterError, AdapterResult
 from apps.connections.models import Connection
 from apps.core.encryption import encrypt
 from apps.messages_api.models import Message

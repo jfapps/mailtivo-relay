@@ -25,19 +25,19 @@ import base64
 import hashlib
 import hmac
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 
 from apps.core.encryption import decrypt
 
 from .base import (
+    PERMANENT_FAILURE,
+    TEMPORARY_FAILURE,
     AdapterError,
     AdapterResult,
     BaseAdapter,
     NormalizedEvent,
-    PERMANENT_FAILURE,
-    TEMPORARY_FAILURE,
 )
 
 _DEFAULT_BASE_URL = "https://api.resend.com"
@@ -181,7 +181,7 @@ class ResendAdapter(BaseAdapter):
         except (ValueError, TypeError):
             return False
 
-        signed_content = f"{svix_id}.{svix_ts}.".encode("utf-8") + body
+        signed_content = f"{svix_id}.{svix_ts}.".encode() + body
         expected = base64.b64encode(hmac.new(key, signed_content, hashlib.sha256).digest()).decode("ascii")
 
         for token in svix_sig.split(" "):
@@ -198,9 +198,9 @@ class ResendAdapter(BaseAdapter):
         ev_type = _EVENT_MAP.get(ev_type_raw, "unknown")
         ts_str = payload.get("created_at") or ""
         try:
-            occurred_at = datetime.fromisoformat(ts_str.replace("Z", "+00:00")) if ts_str else datetime.now(timezone.utc)
+            occurred_at = datetime.fromisoformat(ts_str.replace("Z", "+00:00")) if ts_str else datetime.now(UTC)
         except ValueError:
-            occurred_at = datetime.now(timezone.utc)
+            occurred_at = datetime.now(UTC)
 
         data = payload.get("data") or {}
         email_id = data.get("email_id") or data.get("id") or ""

@@ -8,7 +8,6 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-
 KEY_PREFIX = "mr_live_"
 KEY_SECRET_LEN = 36  # base32 chars after the prefix; ~180 bits of entropy
 
@@ -84,7 +83,7 @@ class APIKey(models.Model):
         scopes: list[str],
         created_by=None,
         default_pool=None,
-    ) -> tuple["APIKey", str]:
+    ) -> tuple[APIKey, str]:
         """Create a new APIKey; return (instance, plaintext_secret).
 
         The plaintext is shown to the user once and never persisted.
@@ -101,7 +100,7 @@ class APIKey(models.Model):
         return key, full
 
     @classmethod
-    def authenticate(cls, raw: str | None) -> "APIKey | None":
+    def authenticate(cls, raw: str | None) -> APIKey | None:
         """Look up an APIKey by plaintext bearer secret. Returns None on miss / revoked."""
         if not raw or not raw.startswith(KEY_PREFIX):
             return None

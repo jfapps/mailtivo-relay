@@ -4,7 +4,7 @@ import pytest
 from django.urls import reverse
 
 from apps.accounts.models import User
-from apps.api_keys.models import APIKey, KEY_PREFIX
+from apps.api_keys.models import KEY_PREFIX, APIKey
 
 
 @pytest.fixture
@@ -83,9 +83,9 @@ def test_set_pool_clears_to_none(admin_client):
 
 @pytest.mark.django_db
 def test_set_pool_404_on_revoked_key(admin_client):
-    from apps.pools.models import Pool
-
     from django.utils import timezone
+
+    from apps.pools.models import Pool
 
     capture = Pool.objects.create(name="sandbox", mode=Pool.MODE_CAPTURE)
     key, _ = APIKey.issue(name="app", scopes=["*"])

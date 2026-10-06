@@ -16,8 +16,8 @@ when:
 from __future__ import annotations
 
 import random
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from django.db import transaction
 from django.db.models import F
@@ -71,9 +71,10 @@ def _pick_weighted(members: list[PoolMember]) -> PoolMember:
     total = sum(weights)
     if total == 0:
         return members[0]
-    r = random.uniform(0, total)
+    # Weighted delivery routing is intentionally non-cryptographic.
+    r = random.uniform(0, total)  # nosec B311
     upto = 0.0
-    for m, w in zip(members, weights):
+    for m, w in zip(members, weights, strict=True):
         if w == 0:
             continue
         upto += w

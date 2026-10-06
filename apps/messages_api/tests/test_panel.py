@@ -21,7 +21,7 @@ def auth_client(client, owner):
 
 
 def _make_message(**overrides) -> Message:
-    defaults = dict(from_address="a@x.test", to=["b@y.test"], subject="hello")
+    defaults = {"from_address": "a@x.test", "to": ["b@y.test"], "subject": "hello"}
     defaults.update(overrides)
     msg = Message(**defaults)
     msg.set_body(html="<p>body</p>", text="body")

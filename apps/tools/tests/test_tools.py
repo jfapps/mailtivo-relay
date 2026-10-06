@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from apps.accounts.models import User
 from apps.audit.models import AuditLog
-from apps.connections.adapters import AdapterError, AdapterResult, PERMANENT_FAILURE
+from apps.connections.adapters import PERMANENT_FAILURE, AdapterError, AdapterResult
 from apps.connections.models import Connection
 from apps.core.encryption import encrypt
 from apps.messages_api.models import Message

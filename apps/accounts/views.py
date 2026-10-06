@@ -60,7 +60,8 @@ def login_view(request: HttpRequest) -> HttpResponse:
         return redirect(reverse("accounts:onboarding"))
 
     ws = WorkspaceSettings.load()
-    ip = _client_ip(request) or "0.0.0.0"
+    # Fallback client-IP sentinel; this is not a socket bind address.
+    ip = _client_ip(request) or "0.0.0.0"  # noqa: S104  # nosec B104
     if request.method == "POST":
         form = LoginForm(request.POST, request=request)
         if form.is_valid() and form.user is not None:

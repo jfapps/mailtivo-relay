@@ -4,7 +4,6 @@ from django import forms
 
 from .models import WebhookEndpoint
 
-
 EVENT_TYPE_CHOICES = [
     ("sent", "Sent"),
     ("delivered", "Delivered"),

@@ -12,9 +12,10 @@ send pipeline (Day 4) may instantiate one per task.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from apps.connections.models import Connection
@@ -91,7 +92,7 @@ class BaseAdapter:
 
     provider_code: str = ""
 
-    def __init__(self, connection: "Connection") -> None:
+    def __init__(self, connection: Connection) -> None:
         self.connection = connection
 
     # --- outbound ---------------------------------------------------------

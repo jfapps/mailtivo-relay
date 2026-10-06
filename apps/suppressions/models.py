@@ -64,7 +64,7 @@ class Suppression(models.Model):
         note: str = "",
         source_message=None,
         created_by=None,
-    ) -> "Suppression | None":
+    ) -> Suppression | None:
         """Idempotent insert; returns the row or None if the email is invalid."""
         cleaned = (email or "").strip().lower()
         if "@" not in cleaned:

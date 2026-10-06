@@ -18,7 +18,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 
-from apps.connections.adapters import AdapterError, PERMANENT_FAILURE
+from apps.connections.adapters import PERMANENT_FAILURE, AdapterError
 from apps.connections.models import Connection
 from apps.messages_api.models import Message
 from apps.pools.models import PoolMember

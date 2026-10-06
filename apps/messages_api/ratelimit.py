@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from django.conf import settings
 from django.core.cache import cache
 
-
 DEFAULT_PER_SECOND = 10
 DEFAULT_PER_MINUTE = 600
 

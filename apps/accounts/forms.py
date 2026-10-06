@@ -44,6 +44,7 @@ class OnboardingForm(forms.Form):
         pw = cleaned.get("password") or ""
         confirm = cleaned.get("password_confirm") or ""
         if pw != confirm:
-            raise ValidationError({"password_confirm": "Passwords do not match."})
+            # Validation copy, not a credential literal.
+            raise ValidationError({"password_confirm": "Passwords do not match."})  # nosec B105
         validate_password(pw)
         return cleaned

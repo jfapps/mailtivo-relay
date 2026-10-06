@@ -30,7 +30,7 @@ from __future__ import annotations
 import base64
 import binascii
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 from cryptography.exceptions import InvalidSignature
@@ -40,12 +40,12 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from apps.core.encryption import decrypt
 
 from .base import (
+    PERMANENT_FAILURE,
+    TEMPORARY_FAILURE,
     AdapterError,
     AdapterResult,
     BaseAdapter,
     NormalizedEvent,
-    PERMANENT_FAILURE,
-    TEMPORARY_FAILURE,
 )
 
 _HTTP_TIMEOUT = 15
@@ -163,7 +163,8 @@ class PostalAdapter(BaseAdapter):
             )
 
         recipients = data.get("messages") or {}
-        first_token = ""
+        # Empty parser sentinel; not a credential.
+        first_token = ""  # nosec B105
         recipient_tokens: dict[str, str] = {}
         for addr, info in recipients.items():
             tok = info.get("token", "") if isinstance(info, dict) else ""
@@ -233,7 +234,8 @@ class PostalAdapter(BaseAdapter):
             except (binascii.Error, ValueError):
                 return False
             try:
-                public_key.verify(signature, body, padding.PKCS1v15(), hashes.SHA1())  # noqa: S303 - legacy compat
+                # Postal v2 legacy signatures are RSA-SHA1; verification only.
+                public_key.verify(signature, body, padding.PKCS1v15(), hashes.SHA1())  # noqa: S303  # nosec B303
                 return True
             except InvalidSignature:
                 return False
@@ -246,9 +248,9 @@ class PostalAdapter(BaseAdapter):
 
         ts_raw = envelope.get("timestamp")
         if isinstance(ts_raw, (int, float)):
-            occurred_at = datetime.fromtimestamp(float(ts_raw), tz=timezone.utc)
+            occurred_at = datetime.fromtimestamp(float(ts_raw), tz=UTC)
         else:
-            occurred_at = datetime.now(timezone.utc)
+            occurred_at = datetime.now(UTC)
 
         uuid = envelope.get("uuid") or ""
         payload = envelope.get("payload") or {}

@@ -59,7 +59,7 @@ def test_error_rate_pct():
 def test_5xx_sets_skip_until_and_degrades():
     pool = Pool.objects.create(name="p", routing_strategy=Pool.STRATEGY_FAILOVER)
     primary = PoolMember.objects.create(pool=pool, connection=_conn("primary"), priority=0)
-    backup = PoolMember.objects.create(pool=pool, connection=_conn("backup"), priority=10)
+    PoolMember.objects.create(pool=pool, connection=_conn("backup"), priority=10)
 
     msg = Message(pool=pool, from_address="a@x.test", to=["b@y.test"], subject="x")
     msg.set_body(text=".")

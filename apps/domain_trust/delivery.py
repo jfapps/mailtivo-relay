@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from email import policy
 from email.parser import Parser
+from email.utils import parseaddr
 from typing import Any
 
 
@@ -14,10 +15,12 @@ _DKIM_SELECTOR_RE = re.compile(r"\bheader\.s=([^;\s]+)", re.I)
 
 
 def _domain_from_address(value: str) -> str:
-    value = (value or "").strip().strip("<>")
-    if "@" not in value:
-        return value.lower().rstrip(".")
-    return value.rsplit("@", 1)[1].lower().rstrip(".")
+    value = (value or "").strip()
+    _name, parsed = parseaddr(value)
+    candidate = parsed or value.strip("<>")
+    if "@" not in candidate:
+        return candidate.lower().rstrip(".")
+    return candidate.rsplit("@", 1)[1].lower().rstrip(".>")
 
 
 def _aligned(candidate: str, domain: str) -> bool:

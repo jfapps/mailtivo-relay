@@ -34,7 +34,7 @@ jobs:
         run: mypy apps mailtivo_relay
         continue-on-error: true  # ratchet up to true blocker once stub coverage is in
       - name: Security (bandit)
-        run: bandit -q -r apps mailtivo_relay
+        run: bandit -q -c pyproject.toml -r apps mailtivo_relay
       - name: Test (pytest)
         # The test settings module mints an ephemeral RELAY_FERNET_KEY at import
         # time, so none needs to be supplied here.

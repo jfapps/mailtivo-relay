@@ -7,7 +7,7 @@ DEBUG = False
 
 # Fail fast on a misconfigured install instead of running with guessable or
 # broken secrets. Both are one-liners to mint — see .env.example.
-if SECRET_KEY == "dev-insecure-change-me":  # noqa: F405 — from base
+if SECRET_KEY == "dev-insecure-change-me":  # noqa: F405  # nosec B105 - reject known development sentinel
     raise ImproperlyConfigured(
         "DJANGO_SECRET_KEY is not set. Generate one: "
         "python -c \"import secrets; print(secrets.token_urlsafe(64))\""

@@ -40,7 +40,8 @@ def inspect_delivery_headers(domain: str, raw_headers: str) -> dict[str, Any]:
     message = Parser(policy=policy.default).parsestr(raw_headers + "\n\n")
     auth_headers = list(message.get_all("Authentication-Results", []))
     arc_headers = list(message.get_all("ARC-Authentication-Results", []))
-    combined = "\n".join(str(x) for x in (auth_headers + arc_headers))
+    authoritative = auth_headers if auth_headers else arc_headers
+    combined = "\n".join(str(x) for x in authoritative)
 
     results = {k.lower(): v.lower() for k, v in _RESULT_RE.findall(combined)}
     spf_result = results.get("spf", "unknown")

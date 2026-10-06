@@ -17,6 +17,8 @@ class DomainIdentity(models.Model):
     certificate_type = models.CharField(max_length=8, choices=CERT_CHOICES, default=CERT_NONE)
     latest_state = models.JSONField(default=dict, blank=True)
     last_checked_at = models.DateTimeField(null=True, blank=True)
+    latest_delivery_state = models.JSONField(default=dict, blank=True)
+    last_delivery_checked_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

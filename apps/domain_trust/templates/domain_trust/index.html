@@ -48,7 +48,9 @@
           <div>
             <div class="flex items-center gap-2">
               <h2 class="section-title">{{ identity.label|default:identity.domain }}</h2>
-              {% if state.gmail_bimi_candidate %}
+              {% if identity.latest_delivery_state.delivery_auth_ready %}
+                <span class="badge-green">Delivery verified</span>
+              {% elif state.gmail_bimi_candidate %}
                 <span class="badge-green">Gmail BIMI candidate</span>
               {% elif state.bimi_infrastructure_ready %}
                 <span class="badge-yellow">Ready for BIMI record</span>
@@ -95,6 +97,53 @@
                 <div class="mt-2 text-sm font-semibold text-ink">{{ state.bimi.status|capfirst }}</div>
                 <p class="mt-1 text-xs text-muted">{{ state.bimi.detail }}</p>
               </div>
+            </div>
+
+            <div class="mt-4 rounded-xl border border-line bg-surface-2 p-4">
+              <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-semibold text-ink">Real delivery proof</div>
+                  {% if identity.last_delivery_checked_at %}
+                    <p class="mt-1 text-sm text-muted">{{ identity.latest_delivery_state.detail }}</p>
+                    <div class="mt-3 grid gap-2 sm:grid-cols-3">
+                      <div class="rounded-lg border border-line bg-surface px-3 py-2 text-xs">
+                        <span class="text-muted">SPF</span>
+                        <strong class="ml-1 text-ink">{{ identity.latest_delivery_state.spf|upper }}</strong>
+                      </div>
+                      <div class="rounded-lg border border-line bg-surface px-3 py-2 text-xs">
+                        <span class="text-muted">DKIM</span>
+                        <strong class="ml-1 text-ink">{{ identity.latest_delivery_state.dkim|upper }}</strong>
+                      </div>
+                      <div class="rounded-lg border border-line bg-surface px-3 py-2 text-xs">
+                        <span class="text-muted">DMARC</span>
+                        <strong class="ml-1 text-ink">{{ identity.latest_delivery_state.dmarc|upper }}</strong>
+                      </div>
+                    </div>
+                    <p class="mt-2 text-xs text-muted">
+                      Signing domain: {{ identity.latest_delivery_state.dkim_domain|default:"—" }}
+                      · selector: {{ identity.latest_delivery_state.dkim_selector|default:"—" }}
+                      · checked {{ identity.last_delivery_checked_at|date:"Y-m-d H:i" }} UTC
+                    </p>
+                  {% else %}
+                    <p class="mt-1 text-sm text-muted">Paste the headers of a message that actually arrived in Gmail or another mailbox. The raw headers are not stored.</p>
+                  {% endif %}
+                </div>
+                {% if identity.latest_delivery_state.delivery_auth_ready %}
+                  <span class="badge-green">Authenticated</span>
+                {% elif identity.last_delivery_checked_at %}
+                  <span class="badge-yellow">Needs attention</span>
+                {% endif %}
+              </div>
+
+              <details class="mt-4">
+                <summary class="cursor-pointer text-sm font-medium text-ink">Check a delivered message</summary>
+                <form method="post" action="{% url 'domain_trust:verify_delivery' identity.pk %}" class="mt-3 space-y-3">
+                  {% csrf_token %}
+                  {{ delivery_form.headers }}
+                  <p class="text-xs text-muted">Only SPF/DKIM/DMARC results and alignment metadata are retained.</p>
+                  <button type="submit" class="btn-secondary">Verify delivery</button>
+                </form>
+              </details>
             </div>
 
             <div class="mt-4 rounded-xl border border-line px-4 py-4">

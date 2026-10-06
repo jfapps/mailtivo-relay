@@ -42,3 +42,18 @@ class DomainIdentityForm(forms.ModelForm):
         if value and not _LABEL_RE.fullmatch(value):
             raise forms.ValidationError("Use only letters, numbers and hyphens.")
         return value
+
+
+class DeliveryHeadersForm(forms.Form):
+    headers = forms.CharField(
+        max_length=200_000,
+        widget=forms.Textarea(
+            attrs={
+                "class": "input min-h-40 font-mono text-xs",
+                "placeholder": "Paste the message headers from Gmail or another mailbox...",
+                "rows": 10,
+                "spellcheck": "false",
+            }
+        ),
+        help_text="Only authentication results are stored; the pasted headers are not retained.",
+    )

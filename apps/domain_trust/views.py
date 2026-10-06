@@ -10,7 +10,8 @@ from django.views.decorators.http import require_http_methods
 
 from apps.audit.models import AuditLog
 
-from .forms import DomainIdentityForm
+from .forms import DeliveryHeadersForm, DomainIdentityForm
+from .delivery import inspect_delivery_headers
 from .models import DomainIdentity
 from .services import inspect_domain
 
@@ -38,7 +39,7 @@ def index(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "domain_trust/index.html",
-        {"form": form, "identities": DomainIdentity.objects.all()},
+        {"form": form, "delivery_form": DeliveryHeadersForm(), "identities": DomainIdentity.objects.all()},
     )
 
 
@@ -63,6 +64,43 @@ def refresh(request: HttpRequest, pk: int) -> HttpResponse:
         },
     )
     messages.success(request, f"DNS status refreshed for {identity.domain}.")
+    return redirect(reverse("domain_trust:index"))
+
+
+@_admin_required
+@require_http_methods(["POST"])
+def verify_delivery(request: HttpRequest, pk: int) -> HttpResponse:
+    identity = get_object_or_404(DomainIdentity, pk=pk)
+    form = DeliveryHeadersForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Paste valid message headers before running the delivery check.")
+        return redirect(reverse("domain_trust:index"))
+    try:
+        state = inspect_delivery_headers(identity.domain, form.cleaned_data["headers"])
+    except ValueError as exc:
+        messages.error(request, f"Delivery check could not be completed: {exc}.")
+        return redirect(reverse("domain_trust:index"))
+
+    identity.latest_delivery_state = state
+    identity.last_delivery_checked_at = timezone.now()
+    identity.save(update_fields=["latest_delivery_state", "last_delivery_checked_at", "updated_at"])
+    AuditLog.record(
+        request.user,
+        action="domain_trust.delivery_checked",
+        target=identity.domain,
+        detail={
+            "status": state.get("status"),
+            "spf": state.get("spf"),
+            "dkim": state.get("dkim"),
+            "dmarc": state.get("dmarc"),
+            "dkim_selector": state.get("dkim_selector"),
+            "delivery_auth_ready": state.get("delivery_auth_ready", False),
+        },
+    )
+    if state.get("delivery_auth_ready"):
+        messages.success(request, f"Real delivery authentication verified for {identity.domain}.")
+    else:
+        messages.warning(request, f"Delivery authentication is not ready for {identity.domain}: {state.get('detail', '')}")
     return redirect(reverse("domain_trust:index"))
 
 

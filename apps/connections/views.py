@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpRequest, HttpResponse
@@ -7,8 +9,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
-
-import json
 
 from apps.audit.models import AuditLog
 from apps.connections.adapters import PROVIDER_LABELS, AdapterError

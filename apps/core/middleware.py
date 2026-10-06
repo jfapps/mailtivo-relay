@@ -8,11 +8,10 @@ remote-iframe / external-asset surface area.
 """
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
-
 
 _DEFAULT_CSP = (
     "default-src 'self'; "

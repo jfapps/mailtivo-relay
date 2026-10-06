@@ -40,7 +40,7 @@ class AuditLog(models.Model):
         action: str,
         target: str = "",
         detail: dict | None = None,
-    ) -> "AuditLog":
+    ) -> AuditLog:
         return cls.objects.create(
             actor=actor if getattr(actor, "is_authenticated", False) else None,
             actor_email=getattr(actor, "email", "") or "",

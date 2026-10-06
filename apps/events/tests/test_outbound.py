@@ -4,7 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -38,7 +38,7 @@ def event(db):
         provider_event_id="evt-1",
         provider_message_id="prov-1",
         recipient="b@y.test",
-        occurred_at=datetime.now(tz=timezone.utc),
+        occurred_at=datetime.now(tz=UTC),
     )
 
 

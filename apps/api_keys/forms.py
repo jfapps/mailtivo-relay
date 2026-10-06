@@ -6,7 +6,6 @@ from apps.pools.models import Pool
 
 from .models import APIKey
 
-
 SCOPE_CHOICES = [
     (APIKey.SCOPE_ALL, "Full access (read + send)"),
     (APIKey.SCOPE_SEND, "Send only"),

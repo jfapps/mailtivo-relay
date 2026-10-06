@@ -31,7 +31,7 @@ import hashlib
 import hmac
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 import requests
@@ -43,12 +43,12 @@ from cryptography.x509 import load_pem_x509_certificate
 from apps.core.encryption import decrypt
 
 from .base import (
+    PERMANENT_FAILURE,
+    TEMPORARY_FAILURE,
     AdapterError,
     AdapterResult,
     BaseAdapter,
     NormalizedEvent,
-    PERMANENT_FAILURE,
-    TEMPORARY_FAILURE,
 )
 
 _HTTP_TIMEOUT = 15
@@ -134,7 +134,7 @@ class SesAdapter(BaseAdapter):
         region = self._region()
         host = self._host()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         amz_date = now.strftime("%Y%m%dT%H%M%SZ")
         datestamp = now.strftime("%Y%m%d")
 
@@ -160,7 +160,7 @@ class SesAdapter(BaseAdapter):
             ]
         )
 
-        k_date = self._sign(f"AWS4{secret_access_key}".encode("utf-8"), datestamp)
+        k_date = self._sign(f"AWS4{secret_access_key}".encode(), datestamp)
         k_region = self._sign(k_date, region)
         k_service = self._sign(k_region, _SIGV4_SERVICE)
         k_signing = self._sign(k_service, "aws4_request")
@@ -411,7 +411,7 @@ class SesAdapter(BaseAdapter):
                 return datetime.fromisoformat(ts.replace("Z", "+00:00"))
             except ValueError:
                 pass
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
     @staticmethod
     def _first_recipient(inner: dict, notif_type: str, mail: dict) -> str:

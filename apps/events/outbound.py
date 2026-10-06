@@ -52,7 +52,7 @@ def sign_body(secret: str, body: bytes, *, ts: int | None = None) -> tuple[str, 
     if ts is None:
         ts = int(time.time())
     key = secret.removeprefix("whsec_").encode("utf-8")
-    signed = f"{ts}.".encode("utf-8") + body
+    signed = f"{ts}.".encode() + body
     mac = hmac.new(key, signed, hashlib.sha256).hexdigest()
     return str(ts), f"t={ts},v1={mac}"
 
@@ -117,8 +117,8 @@ def deliver_one(delivery_id: int) -> str:
     # Failed — schedule next attempt unless we're past MAX_ATTEMPTS.
     if delivery.attempts < MAX_ATTEMPTS:
         try:
-            from django_q.tasks import schedule
             from django_q.models import Schedule
+            from django_q.tasks import schedule
 
             wait_s = _BACKOFFS[min(delivery.attempts - 1, len(_BACKOFFS) - 1)]
             schedule(

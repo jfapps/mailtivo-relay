@@ -10,8 +10,8 @@ from django.views.decorators.http import require_http_methods
 
 from apps.audit.models import AuditLog
 
-from .forms import DeliveryHeadersForm, DomainIdentityForm
 from .delivery import inspect_delivery_headers
+from .forms import DeliveryHeadersForm, DomainIdentityForm
 from .models import DomainIdentity
 from .services import inspect_domain
 

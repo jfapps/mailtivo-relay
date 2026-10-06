@@ -30,7 +30,7 @@ from __future__ import annotations
 import base64
 import binascii
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 from cryptography.exceptions import InvalidSignature
@@ -40,12 +40,12 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from apps.core.encryption import decrypt
 
 from .base import (
+    PERMANENT_FAILURE,
+    TEMPORARY_FAILURE,
     AdapterError,
     AdapterResult,
     BaseAdapter,
     NormalizedEvent,
-    PERMANENT_FAILURE,
-    TEMPORARY_FAILURE,
 )
 
 _HTTP_TIMEOUT = 15
@@ -246,9 +246,9 @@ class PostalAdapter(BaseAdapter):
 
         ts_raw = envelope.get("timestamp")
         if isinstance(ts_raw, (int, float)):
-            occurred_at = datetime.fromtimestamp(float(ts_raw), tz=timezone.utc)
+            occurred_at = datetime.fromtimestamp(float(ts_raw), tz=UTC)
         else:
-            occurred_at = datetime.now(timezone.utc)
+            occurred_at = datetime.now(UTC)
 
         uuid = envelope.get("uuid") or ""
         payload = envelope.get("payload") or {}

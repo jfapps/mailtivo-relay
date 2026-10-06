@@ -14,7 +14,7 @@ from django.utils import timezone
 class UserManager(BaseUserManager["User"]):
     use_in_migrations = True
 
-    def _create_user(self, email: str, password: str | None, **extra: object) -> "User":
+    def _create_user(self, email: str, password: str | None, **extra: object) -> User:
         if not email:
             raise ValueError("Users must have an email address")
         email = self.normalize_email(email)
@@ -26,13 +26,13 @@ class UserManager(BaseUserManager["User"]):
         user.save(using=self._db)
         return user
 
-    def create_user(self, email: str, password: str | None = None, **extra: object) -> "User":
+    def create_user(self, email: str, password: str | None = None, **extra: object) -> User:
         extra.setdefault("is_workspace_admin", False)
         extra.setdefault("is_staff", False)
         extra.setdefault("is_superuser", False)
         return self._create_user(email, password, **extra)
 
-    def create_superuser(self, email: str, password: str | None = None, **extra: object) -> "User":
+    def create_superuser(self, email: str, password: str | None = None, **extra: object) -> User:
         extra["is_workspace_admin"] = True
         extra["is_staff"] = True
         extra["is_superuser"] = True
@@ -79,7 +79,7 @@ class MagicLinkToken(models.Model):
         indexes = [models.Index(fields=["user", "used_at"])]
 
     @classmethod
-    def issue(cls, user: User, *, ttl_minutes: int | None = None, ip: str | None = None) -> tuple["MagicLinkToken", str]:
+    def issue(cls, user: User, *, ttl_minutes: int | None = None, ip: str | None = None) -> tuple[MagicLinkToken, str]:
         raw = secrets.token_urlsafe(48)
         ttl = ttl_minutes if ttl_minutes is not None else getattr(settings, "MAGIC_LINK_TTL_MINUTES", 15)
         token = cls.objects.create(
@@ -167,7 +167,7 @@ class WorkspaceSettings(models.Model):
         super().save(*args, **kwargs)
 
     @classmethod
-    def load(cls) -> "WorkspaceSettings":
+    def load(cls) -> WorkspaceSettings:
         obj, _ = cls.objects.get_or_create(pk=cls.SINGLETON_PK)
         return obj
 
@@ -187,7 +187,7 @@ class Invitation(models.Model):
         ordering = ("-created_at",)
 
     @classmethod
-    def issue(cls, email: str, invited_by: User, *, is_admin: bool = False, ttl_days: int = 7) -> tuple["Invitation", str]:
+    def issue(cls, email: str, invited_by: User, *, is_admin: bool = False, ttl_days: int = 7) -> tuple[Invitation, str]:
         raw = secrets.token_urlsafe(48)
         inv = cls.objects.create(
             email=cls._meta.get_field("email").to_python(email),
@@ -199,7 +199,7 @@ class Invitation(models.Model):
         return inv, raw
 
     @classmethod
-    def lookup(cls, raw: str) -> "Invitation | None":
+    def lookup(cls, raw: str) -> Invitation | None:
         try:
             inv = cls.objects.get(token_hash=_hash_token(raw))
         except cls.DoesNotExist:

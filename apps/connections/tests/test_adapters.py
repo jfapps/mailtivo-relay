@@ -5,21 +5,19 @@ import datetime as dt
 import hashlib
 import hmac
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 import responses
 from cryptography import x509
-from cryptography.x509.oid import NameOID
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.hazmat.primitives import hashes
+from cryptography.x509.oid import NameOID
 
 from apps.connections.adapters import AdapterError, PostalAdapter, ResendAdapter, SesAdapter
 from apps.connections.adapters import ses as ses_module
 from apps.connections.models import Connection
 from apps.core.encryption import encrypt
-
 
 # ---------- Resend ---------------------------------------------------------
 
@@ -222,7 +220,7 @@ def test_postal_parse_event_message_sent():
     assert ev.type == "delivered"
     assert ev.recipient_token == "tok1"
     assert ev.recipient == "rcpt@x.test"
-    assert ev.occurred_at == datetime.fromtimestamp(1747500000.5, tz=timezone.utc)
+    assert ev.occurred_at == datetime.fromtimestamp(1747500000.5, tz=dt.UTC)
 
 
 @pytest.mark.django_db

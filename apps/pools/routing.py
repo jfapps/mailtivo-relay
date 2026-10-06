@@ -16,8 +16,8 @@ when:
 from __future__ import annotations
 
 import random
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from django.db import transaction
 from django.db.models import F

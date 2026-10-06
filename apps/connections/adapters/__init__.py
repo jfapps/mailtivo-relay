@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from .base import (
+    PERMANENT_FAILURE,
+    TEMPORARY_FAILURE,
     AdapterError,
     AdapterResult,
     BaseAdapter,
     NormalizedEvent,
-    PERMANENT_FAILURE,
-    TEMPORARY_FAILURE,
 )
 from .postal import PostalAdapter
 from .resend import ResendAdapter

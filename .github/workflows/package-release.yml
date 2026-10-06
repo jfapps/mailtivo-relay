@@ -1,0 +1,42 @@
+name: Package Mailtivo Relay
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate Python syntax
+        run: python -m compileall -q apps mailtivo_relay
+      - name: Build artifact
+        run: |
+          set -euo pipefail
+          VERSION="$(python -c 'from mailtivo_relay import __version__; print(__version__)')"
+          mkdir -p dist/mailtivo-relay
+          rsync -a ./ dist/mailtivo-relay/ \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude 'dist/' \
+            --exclude '.env' \
+            --exclude 'db.sqlite3' \
+            --exclude 'media/' \
+            --exclude 'staticfiles/' \
+            --exclude '.venv/' \
+            --exclude '__pycache__/'
+          tar -czf "dist/mailtivo-relay-${VERSION}.tar.gz" -C dist mailtivo-relay
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mailtivo-relay-${{ github.sha }}
+          path: dist/mailtivo-relay-*.tar.gz
+          if-no-files-found: error
+          retention-days: 14

@@ -50,8 +50,10 @@
               <h2 class="section-title">{{ identity.label|default:identity.domain }}</h2>
               {% if identity.latest_delivery_state.delivery_auth_ready %}
                 <span class="badge-green">Delivery verified</span>
-              {% elif state.gmail_bimi_candidate %}
-                <span class="badge-green">Gmail BIMI candidate</span>
+              {% elif state.gmail_verified_check_candidate %}
+                <span class="badge-green">Gmail verified check candidate</span>
+              {% elif state.gmail_logo_candidate %}
+                <span class="badge-green">Gmail logo candidate</span>
               {% elif state.bimi_infrastructure_ready %}
                 <span class="badge-yellow">Ready for BIMI record</span>
               {% endif %}
@@ -150,8 +152,10 @@
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div class="text-sm font-semibold text-ink">Next step</div>
-                  {% if state.gmail_bimi_candidate %}
-                    <p class="mt-1 text-sm text-muted">Authentication and BIMI records are present. Confirm the CMC/VMC certificate with the issuer and run a real Gmail delivery test.</p>
+                  {% if state.gmail_verified_check_candidate %}
+                    <p class="mt-1 text-sm text-muted">Authentication, BIMI and VMC are present. Run a real Gmail delivery test and confirm the verified checkmark appears.</p>
+                  {% elif state.gmail_logo_candidate %}
+                    <p class="mt-1 text-sm text-muted">Authentication and BIMI are present. A CMC can support the brand logo, but Gmail verified checkmark requires a VMC.</p>
                   {% elif state.bimi_infrastructure_ready %}
                     <p class="mt-1 text-sm text-muted">SPF, DKIM and DMARC enforcement are ready. Publish the BIMI record and certificate before testing Gmail.</p>
                   {% elif state.dmarc.status == "monitoring" %}
@@ -173,6 +177,9 @@
               <div class="mt-3 space-y-3 font-mono text-xs text-muted">
                 <div>DMARC policy: {{ state.dmarc_policy|default:"—" }} · pct={{ state.dmarc_pct|default:"—" }}</div>
                 <div>BIMI authority: {{ state.bimi_authority|default:"—" }}</div>
+                <div>Certificate type: {{ state.certificate_type|default:"none"|upper }}</div>
+                <div>Gmail logo candidate: {{ state.gmail_logo_candidate|yesno:"yes,no" }}</div>
+                <div>Gmail verified check candidate: {{ state.gmail_verified_check_candidate|yesno:"yes,no" }}</div>
                 {% if state.spf.records %}<div class="break-all">SPF: {{ state.spf.records|join:" | " }}</div>{% endif %}
                 {% if state.dkim.records %}<div class="break-all">DKIM: {{ state.dkim.records|join:" | " }}</div>{% endif %}
                 {% if state.dmarc.records %}<div class="break-all">DMARC: {{ state.dmarc.records|join:" | " }}</div>{% endif %}

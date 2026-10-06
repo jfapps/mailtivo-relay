@@ -67,7 +67,7 @@ def _client_ip(request: HttpRequest) -> str:
     fwd = request.META.get("HTTP_X_FORWARDED_FOR", "")
     if fwd:
         return fwd.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "0.0.0.0")  # noqa: S104 - fallback client-IP sentinel, not a bind address
+    return request.META.get("REMOTE_ADDR", "0.0.0.0")  # noqa: S104  # nosec B104 - fallback client-IP sentinel, not a bind address
 
 
 def _bucket_key(ip: str) -> str:

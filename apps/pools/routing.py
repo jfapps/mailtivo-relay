@@ -71,7 +71,7 @@ def _pick_weighted(members: list[PoolMember]) -> PoolMember:
     total = sum(weights)
     if total == 0:
         return members[0]
-    r = random.uniform(0, total)
+    r = random.uniform(0, total)  # nosec B311 - weighted routing choice is not security-sensitive
     upto = 0.0
     for m, w in zip(members, weights, strict=True):
         if w == 0:

@@ -309,7 +309,8 @@ class SesAdapter(BaseAdapter):
         except (binascii.Error, ValueError):
             return False
 
-        algo = hashes.SHA256() if str(payload.get("SignatureVersion")) == "2" else hashes.SHA1()
+        # AWS SNS SignatureVersion 1 requires SHA-1 for signature verification compatibility.
+        algo = hashes.SHA256() if str(payload.get("SignatureVersion")) == "2" else hashes.SHA1()  # noqa: S303  # nosec B303
         try:
             public_key.verify(signature, canonical.encode("utf-8"), padding.PKCS1v15(), algo)
             return True
